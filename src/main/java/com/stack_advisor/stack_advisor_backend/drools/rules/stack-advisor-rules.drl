@@ -1,0 +1,329 @@
+package com.stack_advisor.stack_advisor_backend.drools.rules;
+
+import com.stack_advisor.stack_advisor_backend.models.RecommendedStack
+import com.stack_advisor.stack_advisor_backend.models.ProjectRequirements
+import com.stack_advisor.stack_advisor_backend.models.TechnologyStack
+
+global RecommendedStack recommendation
+
+// Rule for Fast Development Web Projects
+rule "Fast Development Web Stack"
+    when
+        $req: ProjectRequirements(
+            projectType == "WEB",
+            timeToShow == "FAST",
+            teamSize in ("SMALL", "MEDIUM")
+        )
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("Rapid Web Development Stack");
+        stack.setArchitectureStyle("Monolithic");
+        stack.setDeploymentStrategy("Containerized");
+        stack.setConfidenceScore(85);
+        stack.setRecommendationReason("Fast development with modern frameworks");
+
+        stack.addBackendFramework("Spring Boot");
+        stack.addBackendFramework("Node.js + Express");
+        stack.addFrontendFramework("React");
+        stack.addFrontendFramework("Vue.js");
+        stack.addDatabase("PostgreSQL");
+        stack.addDatabase("MongoDB");
+        stack.addDevOpsTool("Docker");
+        stack.addDevOpsTool("GitHub Actions");
+        stack.addTestingFramework("JUnit");
+        stack.addTestingFramework("Jest");
+        stack.addTestingFramework("Cypress");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for Enterprise Java Applications
+rule "Enterprise Java Stack"
+    when
+        $req: ProjectRequirements(
+            projectType == "ENTERPRISE",
+            scalability == "HIGH",
+            budget != "LOW",
+            teamExpertise in ("MIDDLE", "SENIOR")
+        )
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("Enterprise Java Stack");
+        stack.setArchitectureStyle("Microservices");
+        stack.setDeploymentStrategy("Kubernetes");
+        stack.setConfidenceScore(90);
+        stack.setRecommendationReason("Scalable enterprise solution with strong ecosystem");
+
+        stack.addBackendFramework("Spring Boot");
+        stack.addBackendFramework("Micronaut");
+        stack.addBackendFramework("Quarkus");
+        stack.addFrontendFramework("Angular");
+        stack.addFrontendFramework("React + TypeScript");
+        stack.addDatabase("PostgreSQL");
+        stack.addDatabase("Oracle");
+        stack.addDatabase("Redis");
+        stack.addMessagingSystem("Apache Kafka");
+        stack.addMessagingSystem("RabbitMQ");
+        stack.addCloudProvider("AWS");
+        stack.addCloudProvider("Azure");
+        stack.addDevOpsTool("Kubernetes");
+        stack.addDevOpsTool("Docker");
+        stack.addDevOpsTool("Jenkins");
+        stack.addTestingFramework("JUnit 5");
+        stack.addTestingFramework("TestContainers");
+        stack.addTestingFramework("Selenium");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for High-Performance Real-time Systems
+rule "High Performance Real-time Stack"
+    when
+        $req: ProjectRequirements(
+            realTime == true,
+            scalability == "HIGH"
+        )
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("High-Performance Real-time Stack");
+        stack.setArchitectureStyle("Event-Driven");
+        stack.setDeploymentStrategy("Cloud Native");
+        stack.setConfidenceScore(88);
+        stack.setRecommendationReason("Optimized for real-time performance and scalability");
+
+        stack.addBackendFramework("Spring Boot + WebFlux");
+        stack.addBackendFramework("Node.js");
+        stack.addBackendFramework("Go");
+        stack.addFrontendFramework("React + WebSockets");
+        stack.addFrontendFramework("Vue.js");
+        stack.addDatabase("Redis");
+        stack.addDatabase("Cassandra");
+        stack.addDatabase("TimescaleDB");
+        stack.addMessagingSystem("Apache Kafka");
+        stack.addMessagingSystem("NATS");
+        stack.addCloudProvider("AWS");
+        stack.addCloudProvider("Google Cloud");
+        stack.addDevOpsTool("Kubernetes");
+        stack.addDevOpsTool("Prometheus");
+        stack.addDevOpsTool("Grafana");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for Small Team Startup Projects
+rule "Startup Friendly Stack"
+    when
+        $req: ProjectRequirements(
+            teamSize == "SMALL",
+            budget == "LOW",
+            timeToShow == "FAST"
+        )
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("Startup-Friendly Stack");
+        stack.setArchitectureStyle("Monolithic");
+        stack.setDeploymentStrategy("PaaS");
+        stack.setConfidenceScore(82);
+        stack.setRecommendationReason("Cost-effective and rapid development for startups");
+
+        stack.addBackendFramework("Node.js + Express");
+        stack.addBackendFramework("Python + Django");
+        stack.addFrontendFramework("React");
+        stack.addFrontendFramework("Vue.js");
+        stack.addDatabase("PostgreSQL");
+        stack.addDatabase("MongoDB");
+        stack.addCloudProvider("Heroku");
+        stack.addCloudProvider("Vercel");
+        stack.addCloudProvider("Railway");
+        stack.addDevOpsTool("GitHub Actions");
+        stack.addTestingFramework("Jest");
+        stack.addTestingFramework("Pytest");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for Mobile Applications
+rule "Mobile Development Stack"
+    when
+        $req: ProjectRequirements(projectType == "MOBILE")
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("Mobile Development Stack");
+        stack.setArchitectureStyle("Cross-Platform");
+        stack.setDeploymentStrategy("App Stores");
+        stack.setConfidenceScore(85);
+        stack.setRecommendationReason("Cross-platform mobile development solutions");
+
+        stack.addBackendFramework("Node.js");
+        stack.addBackendFramework("Spring Boot");
+        stack.addFrontendFramework("React Native");
+        stack.addFrontendFramework("Flutter");
+        stack.addFrontendFramework("Ionic");
+        stack.addDatabase("Firebase");
+        stack.addDatabase("MongoDB Realm");
+        stack.addCloudProvider("Firebase");
+        stack.addCloudProvider("AWS Amplify");
+        stack.addDevOpsTool("Fastlane");
+        stack.addDevOpsTool("GitHub Actions");
+        stack.addTestingFramework("Detox");
+        stack.addTestingFramework("Flutter Test");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for AI/ML Projects
+rule "AI/ML Project Stack"
+    when
+        $req: ProjectRequirements(projectType == "AI")
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("AI/ML Development Stack");
+        stack.setArchitectureStyle("Microservices");
+        stack.setDeploymentStrategy("GPU Optimized");
+        stack.setConfidenceScore(87);
+        stack.setRecommendationReason("Specialized stack for AI and machine learning projects");
+
+        stack.addBackendFramework("Python + FastAPI");
+        stack.addBackendFramework("Node.js");
+        stack.addFrontendFramework("React");
+        stack.addFrontendFramework("Streamlit");
+        stack.addDatabase("PostgreSQL");
+        stack.addDatabase("MongoDB");
+        stack.addDatabase("Redis");
+        stack.addMessagingSystem("Apache Kafka");
+        stack.addCloudProvider("AWS SageMaker");
+        stack.addCloudProvider("Google AI Platform");
+        stack.addCloudProvider("Azure ML");
+        stack.addDevOpsTool("Docker");
+        stack.addDevOpsTool("Kubernetes");
+        stack.addDevOpsTool("MLflow");
+        stack.addTestingFramework("Pytest");
+        stack.addTestingFramework("Jest");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for High Security Projects
+rule "High Security Stack"
+    when
+        $req: ProjectRequirements(securityLevel == "HIGH")
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("High Security Stack");
+        stack.setArchitectureStyle("Zero Trust");
+        stack.setDeploymentStrategy("Private Cloud");
+        stack.setConfidenceScore(92);
+        stack.setRecommendationReason("Enterprise-grade security focused stack");
+
+        stack.addBackendFramework("Spring Boot + Spring Security");
+        stack.addBackendFramework("ASP.NET Core");
+        stack.addFrontendFramework("Angular");
+        stack.addFrontendFramework("React with OAuth2");
+        stack.addDatabase("PostgreSQL with encryption");
+        stack.addDatabase("Oracle");
+        stack.addMessagingSystem("RabbitMQ with TLS");
+        stack.addCloudProvider("AWS GovCloud");
+        stack.addCloudProvider("Azure Government");
+        stack.addDevOpsTool("HashiCorp Vault");
+        stack.addDevOpsTool("SonarQube");
+        stack.addDevOpsTool("Snyk");
+        stack.addTestingFramework("OWASP ZAP");
+        stack.addTestingFramework("Security Scanning");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for JavaScript/TypeScript Preferred Teams
+rule "JavaScript Full Stack"
+    when
+        $req: ProjectRequirements(preferredLanguages contains "JAVASCRIPT" || preferredLanguages contains "TYPESCRIPT")
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("JavaScript Full Stack");
+        stack.setArchitectureStyle("JAMstack");
+        stack.setDeploymentStrategy("Serverless");
+        stack.setConfidenceScore(80);
+        stack.setRecommendationReason("Full JavaScript/TypeScript development ecosystem");
+
+        stack.addBackendFramework("Node.js + Express");
+        stack.addBackendFramework("NestJS");
+        stack.addBackendFramework("Next.js API Routes");
+        stack.addFrontendFramework("React + TypeScript");
+        stack.addFrontendFramework("Vue.js");
+        stack.addFrontendFramework("Angular");
+        stack.addFrontendFramework("Next.js");
+        stack.addFrontendFramework("Nuxt.js");
+        stack.addDatabase("MongoDB");
+        stack.addDatabase("PostgreSQL");
+        stack.addCloudProvider("Vercel");
+        stack.addCloudProvider("Netlify");
+        stack.addCloudProvider("AWS Lambda");
+        stack.addDevOpsTool("GitHub Actions");
+        stack.addTestingFramework("Jest");
+        stack.addTestingFramework("Cypress");
+        stack.addTestingFramework("Playwright");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Rule for Cloud Native Applications
+rule "Cloud Native Stack"
+    when
+        $req: ProjectRequirements(cloudNative == true, microservices == true)
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("Cloud Native Stack");
+        stack.setArchitectureStyle("Microservices + Serverless");
+        stack.setDeploymentStrategy("Kubernetes + Serverless");
+        stack.setConfidenceScore(89);
+        stack.setRecommendationReason("Modern cloud-native architecture with microservices");
+
+        stack.addBackendFramework("Spring Boot");
+        stack.addBackendFramework("Quarkus");
+        stack.addBackendFramework("Node.js");
+        stack.addBackendFramework("Go");
+        stack.addFrontendFramework("React");
+        stack.addDatabase("Amazon DynamoDB");
+        stack.addDatabase("Google Cloud Spanner");
+        stack.addDatabase("Azure Cosmos DB");
+        stack.addMessagingSystem("Apache Kafka");
+        stack.addMessagingSystem("AWS SQS");
+        stack.addCloudProvider("AWS");
+        stack.addCloudProvider("Google Cloud");
+        stack.addCloudProvider("Azure");
+        stack.addDevOpsTool("Kubernetes");
+        stack.addDevOpsTool("Istio");
+        stack.addDevOpsTool("Helm");
+        stack.addDevOpsTool("ArgoCD");
+        stack.addTestingFramework("JUnit");
+        stack.addTestingFramework("TestContainers");
+
+        recommendation.addRecommendedStack(stack);
+end
+
+// Fallback Rule - General Purpose Web Stack
+rule "General Purpose Web Stack"
+    when
+        $req: ProjectRequirements()
+        not TechnologyStack()
+    then
+        TechnologyStack stack = new TechnologyStack();
+        stack.setStackName("General Purpose Web Stack");
+        stack.setArchitectureStyle("Monolithic");
+        stack.setDeploymentStrategy("Containerized");
+        stack.setConfidenceScore(75);
+        stack.setRecommendationReason("Reliable general-purpose web development stack");
+
+        stack.addBackendFramework("Spring Boot");
+        stack.addBackendFramework("Node.js");
+        stack.addFrontendFramework("React");
+        stack.addDatabase("PostgreSQL");
+        stack.addDatabase("MySQL");
+        stack.addCloudProvider("AWS");
+        stack.addDevOpsTool("Docker");
+        stack.addDevOpsTool("Jenkins");
+        stack.addTestingFramework("JUnit");
+        stack.addTestingFramework("Jest");
+
+        recommendation.addRecommendedStack(stack);
+end
