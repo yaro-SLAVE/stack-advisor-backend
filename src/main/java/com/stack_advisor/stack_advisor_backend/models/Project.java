@@ -53,4 +53,7 @@ public class Project {
     private TeamSize teamSize;
     @Enumerated(EnumType.ORDINAL)
     private Scale scale;
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="data_storage_id")
+    private DataStorage dataStorage;
 }

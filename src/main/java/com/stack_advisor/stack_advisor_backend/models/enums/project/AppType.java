@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum AppType {
     @JsonProperty("web") WEB,
-    @JsonProperty("mobile") MOBILE,
+    @JsonProperty("android") ANDROID,
+    @JsonProperty("ios") IOS,
     @JsonProperty("desktop") DESKTOP
 }

@@ -15,7 +15,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @Table(name = "language",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "id")
+                @UniqueConstraint(columnNames = "id"),
+                @UniqueConstraint(columnNames = "name")
         })
 public class Language {
     @Id
