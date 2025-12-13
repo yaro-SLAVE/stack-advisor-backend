@@ -17,10 +17,10 @@ public class ProjectRequirementsRequest {
     private Scale scale;
     @JsonProperty("time_to_show")
     private TimeToShow timeToShow;
-    private List<String> languages;
-    private List<String> frameworks;
+    private List<Integer> languages;
+    private List<Integer> frameworks;
     @JsonProperty("data_storages")
-    private List<String> dataStorages;
+    private List<Integer> dataStorages;
     @JsonProperty("language_requirements")
     private LanguageRequirementsRequest languageRequirements;
     @JsonProperty("framework_requirements")

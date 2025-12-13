@@ -20,10 +20,20 @@ public class DataStorage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
+    @Enumerated(EnumType.ORDINAL)
     @Column(name="storage_type")
     private StorageType storageType;
+    @Enumerated(EnumType.ORDINAL)
     @Column(name="storage_location")
     private StorageLocation storageLocation;
+    @Enumerated(EnumType.ORDINAL)
     @Column(name="database_type")
     private DataBaseType dataBaseType;
+
+    public DataStorage(String name, StorageType storageType, StorageLocation storageLocation, DataBaseType dataBaseType) {
+        this.name = name;
+        this.storageType = storageType;
+        this.storageLocation = storageLocation;
+        this.dataBaseType = dataBaseType;
+    }
 }

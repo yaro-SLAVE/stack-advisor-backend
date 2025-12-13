@@ -32,4 +32,12 @@ public class Language {
     @Enumerated(EnumType.ORDINAL)
     private Popularity popularity;
     private Purpose purpose;
+
+    public Language(String name, EntryThreshold entryThreshold, ExecutionModel executionModel, Popularity popularity, Purpose purpose) {
+        this.name = name;
+        this.entryThreshold = entryThreshold;
+        this.executionModel = executionModel;
+        this.popularity = popularity;
+        this.purpose = purpose;
+    }
 }
