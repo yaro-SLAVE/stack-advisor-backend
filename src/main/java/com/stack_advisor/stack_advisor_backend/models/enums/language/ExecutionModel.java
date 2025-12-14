@@ -4,5 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum ExecutionModel {
     @JsonProperty("interpretable") INTERPRETABLE,
-    @JsonProperty("compiled") COMPILED
+    @JsonProperty("compiled") COMPILED,
+    @JsonProperty("hybrid") HYBRID,
 }

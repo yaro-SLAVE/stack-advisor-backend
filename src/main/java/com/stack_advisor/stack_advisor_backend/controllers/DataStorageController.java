@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/datastorage")
+@RequestMapping("/api/datastorage/")
 @CrossOrigin(origins = "*")
 public class DataStorageController {
     @Autowired

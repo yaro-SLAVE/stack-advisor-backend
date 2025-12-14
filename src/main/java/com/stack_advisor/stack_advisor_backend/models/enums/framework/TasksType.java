@@ -5,5 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public enum TasksType {
     @JsonProperty("backend") BACKEND,
     @JsonProperty("frontend") FRONTEND,
-    @JsonProperty("mobile") MOBILE
+    @JsonProperty("mobile") MOBILE,
+    @JsonProperty("desktop") DESKTOP
 }

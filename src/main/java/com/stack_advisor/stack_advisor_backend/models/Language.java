@@ -24,7 +24,7 @@ public class Language {
     private Integer id;
     private String name;
     @Enumerated(EnumType.ORDINAL)
-    @Column(name="entry_treshold")
+    @Column(name="entry_threshold")
     private EntryThreshold entryThreshold;
     @Enumerated(EnumType.ORDINAL)
     @Column(name="execution_model")

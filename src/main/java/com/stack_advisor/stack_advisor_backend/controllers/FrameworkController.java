@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/framework")
+@RequestMapping("/api/framework/")
 @CrossOrigin(origins = "*")
 public class FrameworkController {
     @Autowired

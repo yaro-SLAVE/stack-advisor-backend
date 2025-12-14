@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/language")
+@RequestMapping("/api/language/")
 @CrossOrigin(origins = "*")
 public class LanguageController {
     @Autowired
@@ -40,7 +40,13 @@ public class LanguageController {
 
     @PostMapping
     public ResponseEntity<?> createLanguage(@RequestBody LanguageCreatingRequest request) {
-        Language language = languageService.createLanguage(request.getName(), request.getEntryThreshold(), request.getExecutionModel(), request.getPopularity(), request.getPurpose());
+        Language language = languageService.createLanguage(
+                request.getName(),
+                request.getEntryThreshold(),
+                request.getExecutionModel(),
+                request.getPopularity(),
+                request.getPurpose()
+        );
 
         return ResponseEntity.ok(new LanguagesListResponse(language.getId(), language.getName(), language.getEntryThreshold(), language.getExecutionModel(), language.getPopularity(), language.getPurpose()));
     }

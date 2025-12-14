@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 public class LanguageCreatingRequest {
     private String name;
-    @JsonProperty("entry_treshold")
+    @JsonProperty("entry_threshold")
     private EntryThreshold entryThreshold;
     @JsonProperty("execution_model")
     private ExecutionModel executionModel;

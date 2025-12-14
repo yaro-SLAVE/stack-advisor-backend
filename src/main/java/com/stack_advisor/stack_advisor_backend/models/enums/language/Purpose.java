@@ -4,5 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum Purpose {
     @JsonProperty("universal") UNIVERSAL,
-    @JsonProperty("specialized") SPECIALIZED
+    @JsonProperty("web_backend") WEB_BACKEND,
+    @JsonProperty("web_frontend") WEB_FRONTEND,
+    @JsonProperty("mobile") MOBILE,
+    @JsonProperty("desktop") DESKTOP,
+    @JsonProperty("data_science") DATA_SCIENCE
 }
