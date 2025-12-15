@@ -9,7 +9,7 @@ import com.stack_advisor.stack_advisor_backend.models.enums.project.TimeToShow
 
 import com.stack_advisor.stack_advisor_backend.models.enums.language.Purpose
 import com.stack_advisor.stack_advisor_backend.models.enums.language.EntryThreshold
-import com.stack_advisor.stack_advisor_backend.models.enums.language.EntryThreshold
+import com.stack_advisor.stack_advisor_backend.models.enums.language.Popularity
 
 import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.StorageLocation
 
@@ -18,17 +18,58 @@ import com.stack_advisor.stack_advisor_backend.drools.data.DataStorageRecommende
 import com.stack_advisor.stack_advisor_backend.drools.data.FrameworkRecommended
 
 rule "Fast to Show"
+    @Description("Rule for fast time-to-show projects")
+    @Tag("time-to-show")
+    @ActivationListener("com.stack_advisor.stack_advisor_backend.listeners.CustomActivationListener")
     when
         $request: ProjectRequirementsRequest(
             timeToShow == TimeToShow.FAST
         )
         $LanguageResult: LanguageRecommended(
-            language.entryThreshold = EntryThreshold.LOW
+            language.entryThreshold == EntryThreshold.LOW
         )
         $DataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation = StorageLocation.LOCAL
+            dataStorage.storageLocation == StorageLocation.LOCAL
         )
     then
         $LanguageResult.setScore($LanguageResult.getScore() + 9.0);
         $DataStorageResult.setScore($DataStorageResult.getScore() + 8.0);
+        System.out.println("Rule 'Fast to Show' applied to " +
+            $LanguageResult.getLanguage().getName() + " and " +
+            $DataStorageResult.getDataStorage().getName());
+end
+
+rule "Large Team - High Entry Threshold"
+    @Description("Rule for large teams requiring high entry threshold languages")
+    @Tag("team-size")
+    @Tag("entry-threshold")
+    when
+        $request: ProjectRequirementsRequest(
+            teamSize == TeamSize.BIG
+        )
+        $LanguageResult: LanguageRecommended(
+            language.entryThreshold == EntryThreshold.LOW ||
+            language.entryThreshold == EntryThreshold.MEDIUM
+        )
+    then
+        $LanguageResult.setScore($LanguageResult.getScore() + 5.0);
+        System.out.println("Rule 'Large Team' applied to " +
+            $LanguageResult.getLanguage().getName());
+end
+
+rule "Web Application - Popular Frameworks"
+    @Description("Rule for web applications preferring popular frameworks")
+    @Tag("app-type")
+    @Tag("popularity")
+    when
+        $request: ProjectRequirementsRequest(
+            appType == AppType.WEB
+        )
+        $FrameworkResult: FrameworkRecommended(
+            framework.languages.any(language -> language.popularity == Popularity.POPULAR)
+        )
+    then
+        $FrameworkResult.setScore($FrameworkResult.getScore() + 7.0);
+        System.out.println("Rule 'Web Application' applied to " +
+            $FrameworkResult.getFramework().getName());
 end
