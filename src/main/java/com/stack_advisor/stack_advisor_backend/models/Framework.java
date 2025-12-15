@@ -41,7 +41,7 @@ public class Framework {
     private LocalDate lastUpdatedAt;
     @Column(name="is_actual")
     private Boolean isActual;
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
     @Column(name="tasks_type")
     private TasksType tasksType;
 

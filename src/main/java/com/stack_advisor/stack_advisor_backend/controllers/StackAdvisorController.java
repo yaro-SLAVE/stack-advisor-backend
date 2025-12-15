@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping("/api/recommended/")
+@RequestMapping("/api/recommended")
 @CrossOrigin(origins = "*")
 public class StackAdvisorController {
     @Autowired

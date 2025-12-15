@@ -23,7 +23,7 @@ public class ExplanationController {
     @Autowired
     private ExplanationService explanationService;
 
-    @GetMapping("/session/{sessionId}/")
+    @GetMapping("/session/{sessionId}")
     public ResponseEntity<?> getSessionExplanations(@PathVariable String sessionId) {
         try {
             Long id = Long.parseLong(sessionId);
@@ -64,7 +64,7 @@ public class ExplanationController {
         }
     }
 
-    @GetMapping("/session/{sessionId}/summary/")
+    @GetMapping("/session/{sessionId}/summary")
     public ResponseEntity<?> getSessionSummary(@PathVariable String sessionId) {
         try {
             Long id = Long.parseLong(sessionId);
@@ -91,7 +91,7 @@ public class ExplanationController {
         }
     }
 
-    @GetMapping("/recent-sessions/")
+    @GetMapping("/recent-sessions")
     public ResponseEntity<?> getRecentSessions(
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset) {

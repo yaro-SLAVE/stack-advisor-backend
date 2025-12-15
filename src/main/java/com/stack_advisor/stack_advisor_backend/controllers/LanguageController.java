@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/language/")
+@RequestMapping("/api/language")
 @CrossOrigin(origins = "*")
 public class LanguageController {
     @Autowired

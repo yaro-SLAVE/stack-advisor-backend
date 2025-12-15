@@ -17,59 +17,279 @@ import com.stack_advisor.stack_advisor_backend.drools.data.LanguageRecommended
 import com.stack_advisor.stack_advisor_backend.drools.data.DataStorageRecommended
 import com.stack_advisor.stack_advisor_backend.drools.data.FrameworkRecommended
 
-rule "Fast to Show"
-    @Description("Rule for fast time-to-show projects")
-    @Tag("time-to-show")
-    @ActivationListener("com.stack_advisor.stack_advisor_backend.listeners.CustomActivationListener")
+import com.stack_advisor.stack_advisor_backend.models.Language
+
+rule "Fast to Show - Low Entry Threshold"
+    @Description("Rule for fast time-to-show projects requiring low entry threshold")
     when
         $request: ProjectRequirementsRequest(
             timeToShow == TimeToShow.FAST
         )
-        $LanguageResult: LanguageRecommended(
+        $languageResult: LanguageRecommended(
             language.entryThreshold == EntryThreshold.LOW
         )
-        $DataStorageResult: DataStorageRecommended(
+    then
+        $languageResult.setScore($languageResult.getScore() + 9.0);
+        System.out.println("Rule 'Fast to Show' applied to language: " +
+            $languageResult.getLanguage().getName() + ", new score: " + $languageResult.getScore());
+end
+
+rule "Fast to Show - Local Storage"
+    @Description("Rule for fast time-to-show projects preferring local storage")
+    when
+        $request: ProjectRequirementsRequest(
+            timeToShow == TimeToShow.FAST
+        )
+        $dataStorageResult: DataStorageRecommended(
             dataStorage.storageLocation == StorageLocation.LOCAL
         )
     then
-        $LanguageResult.setScore($LanguageResult.getScore() + 9.0);
-        $DataStorageResult.setScore($DataStorageResult.getScore() + 8.0);
-        System.out.println("Rule 'Fast to Show' applied to " +
-            $LanguageResult.getLanguage().getName() + " and " +
-            $DataStorageResult.getDataStorage().getName());
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 8.0);
+        System.out.println("Rule 'Fast to Show - Local Storage' applied to: " +
+            $dataStorageResult.getDataStorage().getName());
 end
 
-rule "Large Team - High Entry Threshold"
-    @Description("Rule for large teams requiring high entry threshold languages")
-    @Tag("team-size")
-    @Tag("entry-threshold")
+rule "Large Team - Medium or Low Entry Threshold"
+    @Description("Rule for large teams requiring low or medium entry threshold languages")
     when
         $request: ProjectRequirementsRequest(
             teamSize == TeamSize.BIG
         )
-        $LanguageResult: LanguageRecommended(
+        $languageResult: LanguageRecommended(
             language.entryThreshold == EntryThreshold.LOW ||
             language.entryThreshold == EntryThreshold.MEDIUM
         )
     then
-        $LanguageResult.setScore($LanguageResult.getScore() + 5.0);
-        System.out.println("Rule 'Large Team' applied to " +
-            $LanguageResult.getLanguage().getName());
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        System.out.println("Rule 'Large Team' applied to language: " +
+            $languageResult.getLanguage().getName());
 end
 
-rule "Web Application - Popular Frameworks"
-    @Description("Rule for web applications preferring popular frameworks")
-    @Tag("app-type")
-    @Tag("popularity")
+rule "Web Application - Framework with Popular Languages"
+    @Description("Rule for web applications preferring frameworks with popular languages")
     when
         $request: ProjectRequirementsRequest(
             appType == AppType.WEB
         )
-        $FrameworkResult: FrameworkRecommended(
-            framework.languages.any(language -> language.popularity == Popularity.POPULAR)
+        $frameworkResult: FrameworkRecommended($framework: framework)
+        Language(popularity == Popularity.POPULAR) from $framework.languages
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
+        System.out.println("Rule 'Web Application - Popular Framework' applied to: " +
+            $framework.getName());
+end
+
+rule "Framework with Specific Language Support"
+    @Description("Bonus for frameworks supporting requested languages")
+    when
+        $request: ProjectRequirementsRequest($requestedLanguages: languages != null && languages.size() > 0)
+        $frameworkResult: FrameworkRecommended($framework: framework)
+        $language: Language() from $framework.languages
+        eval($requestedLanguages.contains($language.getId()))
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 3.0);
+        System.out.println("Rule 'Language Support' applied to framework: " +
+            $framework.getName() + " for language: " + $language.getName());
+end
+
+rule "Database Type Match"
+    @Description("Bonus for matching database type requirements")
+    when
+        $request: ProjectRequirementsRequest(
+            dataStorageRequirements != null &&
+            dataStorageRequirements.dataBaseType != null
+        )
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.dataBaseType == $request.dataStorageRequirements.dataBaseType
         )
     then
-        $FrameworkResult.setScore($FrameworkResult.getScore() + 7.0);
-        System.out.println("Rule 'Web Application' applied to " +
-            $FrameworkResult.getFramework().getName());
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
+        System.out.println("Rule 'Database Type Match' applied to: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Storage Location Match"
+    @Description("Bonus for matching storage location requirements")
+    when
+        $request: ProjectRequirementsRequest(
+            dataStorageRequirements != null &&
+            dataStorageRequirements.storageLocation != null
+        )
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageLocation == $request.dataStorageRequirements.storageLocation
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
+        System.out.println("Rule 'Storage Location Match' applied to: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Language Popularity Match"
+    @Description("Bonus for matching language popularity requirements")
+    when
+        $request: ProjectRequirementsRequest(
+            languageRequirements != null &&
+            languageRequirements.popularity != null
+        )
+        $languageResult: LanguageRecommended(
+            language.popularity == $request.languageRequirements.popularity
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 4.0);
+        System.out.println("Rule 'Language Popularity Match' applied to: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Framework Reactivity Match"
+    @Description("Bonus for matching framework reactivity requirements")
+    when
+        $request: ProjectRequirementsRequest(
+            frameworkRequirements != null &&
+            frameworkRequirements.isReactive != null
+        )
+        $frameworkResult: FrameworkRecommended(
+            framework.isReactive == $request.frameworkRequirements.isReactive
+        )
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 4.0);
+        System.out.println("Rule 'Framework Reactivity Match' applied to: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Recent Framework Bonus"
+    @Description("Bonus for recently updated frameworks")
+    when
+        $frameworkResult: FrameworkRecommended(
+            framework.isActual == true
+        )
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 2.0);
+        System.out.println("Rule 'Recent Framework Bonus' applied to: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Simple Project - Easy Language"
+    @Description("Simple projects benefit from easy languages")
+    when
+        $request: ProjectRequirementsRequest(
+            projectType == ProjectType.PET
+        )
+        $languageResult: LanguageRecommended(
+            language.entryThreshold == EntryThreshold.LOW
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 4.0);
+        System.out.println("Rule 'Simple Project - Easy Language' applied to: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Complex Project - Powerful Language"
+    @Description("Complex projects require powerful languages")
+    when
+        $request: ProjectRequirementsRequest(
+            projectType == ProjectType.COMMERCIAL
+        )
+        $languageResult: LanguageRecommended(
+            language.entryThreshold == EntryThreshold.HIGH
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 6.0);
+        System.out.println("Rule 'Complex Project - Powerful Language' applied to: " +
+            $languageResult.getLanguage().getName());
+end
+
+//rule "Large Scale - High Performance Database"
+//    @Description("Large scale projects require high performance databases")
+//    when
+//        $request: ProjectRequirementsRequest(
+//            scale != null && scale.toString().contains("LARGE")
+//        )
+//        $dataStorageResult: DataStorageRecommended(
+//            dataStorage.dataBaseType == DataBaseType.RELATIONAL ||
+//            dataStorage.dataBaseType == DataBaseType.NOSQL
+//        )
+//    then
+//        $dataStorageResult.setScore($dataStorageResult.getScore() + 4.0);
+//        System.out.println("Rule 'Large Scale - High Performance Database' applied to: " +
+//            $dataStorageResult.getDataStorage().getName());
+//end
+
+rule "Small Team - High Productivity Language"
+    @Description("Small teams benefit from high productivity languages")
+    when
+        $request: ProjectRequirementsRequest(
+            teamSize == TeamSize.SMALL
+        )
+        $languageResult: LanguageRecommended(
+            language.entryThreshold == EntryThreshold.LOW ||
+            language.entryThreshold == EntryThreshold.MEDIUM
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 3.0);
+        System.out.println("Rule 'Small Team - High Productivity Language' applied to: " +
+            $languageResult.getLanguage().getName());
+end
+
+// Правила для комбинаций
+
+rule "Fast Web Application"
+    @Description("Fast web applications need reactive frameworks")
+    when
+        $request: ProjectRequirementsRequest(
+            timeToShow == TimeToShow.FAST &&
+            appType == AppType.WEB
+        )
+        $frameworkResult: FrameworkRecommended(
+            framework.isReactive == true
+        )
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 8.0);
+        System.out.println("Rule 'Fast Web Application' applied to: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Mobile App - Cross Platform Language"
+    @Description("Mobile apps benefit from cross-platform languages")
+    when
+        $request: ProjectRequirementsRequest(
+            appType == AppType.ANDROID || appType == AppType.IOS
+        )
+        $languageResult: LanguageRecommended(
+            language.purpose == Purpose.MOBILE ||
+            language.purpose == Purpose.UNIVERSAL
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        System.out.println("Rule 'Mobile App - Cross Platform Language' applied to: " +
+            $languageResult.getLanguage().getName());
+end
+
+// Правила для отрицательных оценок (penalties)
+
+rule "Outdated Framework Penalty"
+    @Description("Penalty for outdated frameworks")
+    when
+        $frameworkResult: FrameworkRecommended(
+            framework.isActual == false
+        )
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() - 3.0);
+        System.out.println("Rule 'Outdated Framework Penalty' applied to: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Mismatched Storage Type Penalty"
+    @Description("Penalty for mismatched storage types")
+    when
+        $request: ProjectRequirementsRequest(
+            dataStorageRequirements != null &&
+            dataStorageRequirements.storageType != null
+        )
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType != $request.dataStorageRequirements.storageType
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() - 2.0);
+        System.out.println("Rule 'Mismatched Storage Type Penalty' applied to: " +
+            $dataStorageResult.getDataStorage().getName());
 end

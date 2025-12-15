@@ -50,18 +50,15 @@ public class StackAdvisorService {
         KieSession kieSession = kieContainer.newKieSession();
         Long sessionId = kieSession.getIdentifier();
 
-        // Регистрируем слушатель событий
         kieSession.addEventListener(agendaEventListener);
 
         List<LanguageRecommended> languageResults = new ArrayList<>();
         List<FrameworkRecommended> frameworkResults = new ArrayList<>();
         List<DataStorageRecommended> dataStorageResults = new ArrayList<>();
 
-        // Вставляем запрос
         kieSession.insert(request);
         log.debug("Inserted ProjectRequirementsRequest into session {}", sessionId);
 
-        // Вставляем языки
         for (Language language : allLanguages) {
             LanguageRecommended result = new LanguageRecommended(language, 0.0);
             languageResults.add(result);
@@ -69,7 +66,6 @@ public class StackAdvisorService {
         }
         log.debug("Inserted {} languages into session {}", allLanguages.size(), sessionId);
 
-        // Вставляем фреймворки
         for (Framework framework : allFrameworks) {
             FrameworkRecommended result = new FrameworkRecommended(framework, 0.0);
             frameworkResults.add(result);
@@ -77,7 +73,6 @@ public class StackAdvisorService {
         }
         log.debug("Inserted {} frameworks into session {}", allFrameworks.size(), sessionId);
 
-        // Вставляем хранилища данных
         for (DataStorage dataStorage : allDataStorages) {
             DataStorageRecommended result = new DataStorageRecommended(dataStorage, 0.0);
             dataStorageResults.add(result);
@@ -89,21 +84,17 @@ public class StackAdvisorService {
         log.info("Processing {} languages, {} frameworks, {} data storages",
                 languageResults.size(), frameworkResults.size(), dataStorageResults.size());
 
-        // Выполняем правила
         int rulesFired = kieSession.fireAllRules();
         log.info("Rules fired in session {}: {}", sessionId, rulesFired);
 
-        // Логируем выполнение правил
         explanationService.logRuleExecution(sessionId, kieSession);
 
-        // Генерируем объяснения
         explanationService.generateExplanations(sessionId, languageResults,
                 frameworkResults, dataStorageResults, request);
 
         kieSession.dispose();
         log.debug("KieSession {} disposed", sessionId);
 
-        // Фильтруем и сортируем результаты
         List<Language> recommendedLanguages = languageResults.stream()
                 .filter(r -> r.getScore() > 0.5)
                 .sorted(Comparator.comparing(LanguageRecommended::getScore).reversed())
@@ -122,13 +113,11 @@ public class StackAdvisorService {
                 .map(DataStorageRecommended::getDataStorage)
                 .collect(Collectors.toList());
 
-        // Формируем ответ
         ProjectRecommendedResponse response = new ProjectRecommendedResponse();
         response.setLanguageRecommendedList(recommendedLanguages);
         response.setFrameworkRecommendedList(recommendedFrameworks);
         response.setDataStorageRecommendedList(recommendedDataStorages);
 
-        // Добавляем matching scores и метаданные
         Map<String, Object> matchingScores = new HashMap<>();
         matchingScores.put("session_id", sessionId.toString());
         matchingScores.put("rules_fired", rulesFired);
@@ -139,7 +128,6 @@ public class StackAdvisorService {
         matchingScores.put("recommended_frameworks_count", recommendedFrameworks.size());
         matchingScores.put("recommended_datastorages_count", recommendedDataStorages.size());
 
-        // Добавляем статистику по баллам
         if (!languageResults.isEmpty()) {
             DoubleSummaryStatistics langStats = languageResults.stream()
                     .mapToDouble(LanguageRecommended::getScore)
