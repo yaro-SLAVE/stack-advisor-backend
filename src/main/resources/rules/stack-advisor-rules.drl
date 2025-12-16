@@ -1,5 +1,3 @@
-package com.techrecommendation.rules
-
 import com.stack_advisor.stack_advisor_backend.requests.ProjectRequirementsRequest
 
 import com.stack_advisor.stack_advisor_backend.models.enums.project.ProjectType

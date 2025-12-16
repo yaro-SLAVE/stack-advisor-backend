@@ -163,7 +163,6 @@ public class StackAdvisorService {
 
         response.setMatchingScores(matchingScores);
 
-        // Очищаем данные слушателя для этой сессии
         agendaEventListener.clearSessionData(sessionId);
 
         log.info("Recommendations generated for session {}. Languages: {}, Frameworks: {}, DataStorages: {}",

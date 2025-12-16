@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DroolsConfig {
 
-    private static final String RULES_PATH = "../rules/stack-advisor-rules.drl";
+    private static final String RULES_PATH = "rules/stack-advisor-rules.drl";
 
     @Bean
     public KieContainer kieContainer() {
