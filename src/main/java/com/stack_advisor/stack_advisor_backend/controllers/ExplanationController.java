@@ -3,6 +3,7 @@ package com.stack_advisor.stack_advisor_backend.controllers;
 import com.stack_advisor.stack_advisor_backend.drools.services.ExplanationService;
 import com.stack_advisor.stack_advisor_backend.models.RecommendationExplanation;
 import com.stack_advisor.stack_advisor_backend.models.RuleExecutionLog;
+import com.stack_advisor.stack_advisor_backend.repositories.RuleExecutionLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,8 @@ public class ExplanationController {
 
     @Autowired
     private ExplanationService explanationService;
+    @Autowired
+    private RuleExecutionLogRepository ruleExecutionLogRepository;
 
     @GetMapping("/session/{sessionId}")
     public ResponseEntity<?> getSessionExplanations(@PathVariable String sessionId) {
@@ -96,14 +100,11 @@ public class ExplanationController {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset) {
         try {
-            // Здесь можно добавить логику для получения последних сессий
-            // из репозитория RuleExecutionLog
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Endpoint under construction",
-                    "limit", limit,
-                    "offset", offset
-            ));
+            List<RuleExecutionLog> response = ruleExecutionLogRepository.findAll();
+
+            response.sort(Comparator.comparing(RuleExecutionLog::getSessionId));
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting recent sessions", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

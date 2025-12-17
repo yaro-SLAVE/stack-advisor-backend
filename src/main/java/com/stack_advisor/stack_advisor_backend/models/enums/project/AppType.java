@@ -6,5 +6,6 @@ public enum AppType {
     @JsonProperty("web") WEB,
     @JsonProperty("android") ANDROID,
     @JsonProperty("ios") IOS,
-    @JsonProperty("desktop") DESKTOP
+    @JsonProperty("desktop") DESKTOP,
+    @JsonProperty("unknown") UNKNOWN
 }

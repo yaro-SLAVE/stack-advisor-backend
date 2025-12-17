@@ -4,12 +4,17 @@ import com.stack_advisor.stack_advisor_backend.models.enums.project.ProjectType
 import com.stack_advisor.stack_advisor_backend.models.enums.project.TeamSize
 import com.stack_advisor.stack_advisor_backend.models.enums.project.AppType
 import com.stack_advisor.stack_advisor_backend.models.enums.project.TimeToShow
+import com.stack_advisor.stack_advisor_backend.models.enums.project.Scale
 
 import com.stack_advisor.stack_advisor_backend.models.enums.language.Purpose
 import com.stack_advisor.stack_advisor_backend.models.enums.language.EntryThreshold
 import com.stack_advisor.stack_advisor_backend.models.enums.language.Popularity
+import com.stack_advisor.stack_advisor_backend.models.enums.language.ExecutionModel
+import com.stack_advisor.stack_advisor_backend.models.enums.framework.TasksType
 
 import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.StorageLocation
+import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.StorageType
+import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.DataBaseType
 
 import com.stack_advisor.stack_advisor_backend.drools.data.LanguageRecommended
 import com.stack_advisor.stack_advisor_backend.drools.data.DataStorageRecommended
@@ -17,68 +22,270 @@ import com.stack_advisor.stack_advisor_backend.drools.data.FrameworkRecommended
 
 import com.stack_advisor.stack_advisor_backend.models.Language
 
-rule "Fast to Show - Low Entry Threshold"
-    @Description("Rule for fast time-to-show projects requiring low entry threshold")
+rule "Fast Time to Show - Easy Languages"
+    @Description("Быстрые проекты требуют языков с низким порогом входа")
     when
-        $request: ProjectRequirementsRequest(
-            timeToShow == TimeToShow.FAST
-        )
-        $languageResult: LanguageRecommended(
-            language.entryThreshold == EntryThreshold.LOW
-        )
+        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
+        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
     then
-        $languageResult.setScore($languageResult.getScore() + 9.0);
-        System.out.println("Rule 'Fast to Show' applied to language: " +
-            $languageResult.getLanguage().getName() + ", new score: " + $languageResult.getScore());
-end
-
-rule "Fast to Show - Local Storage"
-    @Description("Rule for fast time-to-show projects preferring local storage")
-    when
-        $request: ProjectRequirementsRequest(
-            timeToShow == TimeToShow.FAST
-        )
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation == StorageLocation.LOCAL
-        )
-    then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 8.0);
-        System.out.println("Rule 'Fast to Show - Local Storage' applied to: " +
-            $dataStorageResult.getDataStorage().getName());
-end
-
-rule "Large Team - Medium or Low Entry Threshold"
-    @Description("Rule for large teams requiring low or medium entry threshold languages")
-    when
-        $request: ProjectRequirementsRequest(
-            teamSize == TeamSize.BIG
-        )
-        $languageResult: LanguageRecommended(
-            language.entryThreshold == EntryThreshold.LOW ||
-            language.entryThreshold == EntryThreshold.MEDIUM
-        )
-    then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        System.out.println("Rule 'Large Team' applied to language: " +
+        $languageResult.setScore($languageResult.getScore() + 8.0);
+        System.out.println("[Rules] Fast project -> Easy language: " +
             $languageResult.getLanguage().getName());
 end
 
-rule "Web Application - Framework with Popular Languages"
-    @Description("Rule for web applications preferring frameworks with popular languages")
+rule "Large Team - Standardized Languages"
+    @Description("Большие команды нуждаются в популярных, стандартизированных языках")
+    when
+        $request: ProjectRequirementsRequest(teamSize == TeamSize.BIG || teamSize == TeamSize.MEDIUM)
+        $languageResult: LanguageRecommended(language.popularity == Popularity.POPULAR)
+    then
+        $languageResult.setScore($languageResult.getScore() + 7.0);
+        System.out.println("[Rules] Large team -> Popular language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Small Team - Productive Languages"
+    @Description("Маленькие команды выигрывают от языков с высокой продуктивностью")
+    when
+        $request: ProjectRequirementsRequest(teamSize == TeamSize.MICRO || teamSize == TeamSize.SMALL)
+        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
+    then
+        $languageResult.setScore($languageResult.getScore() + 6.0);
+        System.out.println("[Rules] Small team -> Productive language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Web Backend - Compiled Languages"
+    @Description("Для бэкенда веб-приложений предпочтительны компилируемые языки")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.WEB)
+        $languageResult: LanguageRecommended(
+            language.executionModel == ExecutionModel.COMPILED &&
+            language.purpose == Purpose.WEB_BACKEND
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 9.0);
+        System.out.println("[Rules] Web backend -> Compiled language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Mobile Development - Mobile Purpose"
+    @Description("Для мобильной разработки нужны языки с соответствующей специализацией")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.ANDROID || appType == AppType.IOS)
+        $languageResult: LanguageRecommended(language.purpose == Purpose.MOBILE)
+    then
+        $languageResult.setScore($languageResult.getScore() + 8.0);
+        System.out.println("[Rules] Mobile app -> Mobile language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Desktop Application - Universal Languages"
+    @Description("Десктопные приложения часто используют универсальные языки")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.DESKTOP)
+        $languageResult: LanguageRecommended(language.purpose == Purpose.UNIVERSAL)
+    then
+        $languageResult.setScore($languageResult.getScore() + 7.0);
+        System.out.println("[Rules] Desktop app -> Universal language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Complex Project - Powerful Languages"
+    @Description("Сложные проекты требуют мощных языков с высоким порогом входа")
+    when
+        $request: ProjectRequirementsRequest(scale == Scale.COMPLEX || scale == Scale.HARD)
+        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.HIGH)
+    then
+        $languageResult.setScore($languageResult.getScore() + 8.0);
+        System.out.println("[Rules] Complex project -> Powerful language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Easy Project - Simple Languages"
+    @Description("Простые проекты выигрывают от легких в изучении языков")
+    when
+        $request: ProjectRequirementsRequest(scale == Scale.EASY)
+        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
+    then
+        $languageResult.setScore($languageResult.getScore() + 6.0);
+        System.out.println("[Rules] Easy project -> Simple language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Commercial Project - Popular Languages"
+    @Description("Коммерческие проекты требуют популярных, проверенных языков")
+    when
+        $request: ProjectRequirementsRequest(projectType == ProjectType.COMMERCIAL)
+        $languageResult: LanguageRecommended(language.popularity == Popularity.POPULAR)
+    then
+        $languageResult.setScore($languageResult.getScore() + 7.0);
+        System.out.println("[Rules] Commercial project -> Popular language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Research Project - Flexible Languages"
+    @Description("Исследовательские проекты требуют гибких, интерпретируемых языков")
+    when
+        $request: ProjectRequirementsRequest(projectType == ProjectType.RESEARCH)
+        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.INTERPRETABLE)
+    then
+        $languageResult.setScore($languageResult.getScore() + 6.0);
+        System.out.println("[Rules] Research project -> Interpretable language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Pet Project - Modern Languages"
+    @Description("Личные проекты часто используют современные, актуальные языки")
+    when
+        $request: ProjectRequirementsRequest(projectType == ProjectType.PET)
+        $languageResult: LanguageRecommended(language.popularity == Popularity.ACTUAL)
+    then
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        System.out.println("[Rules] Pet project -> Modern language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Data Science Purpose Match"
+    @Description("Проекты data science требуют специализированных языков")
+    when
+        $languageResult: LanguageRecommended(language.purpose == Purpose.DATA_SCIENCE)
+    then
+        $languageResult.setScore($languageResult.getScore() + 4.0);
+        System.out.println("[Rules] Data science language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Web Frontend Purpose Match"
+    @Description("Фронтенд разработка требует соответствующих языков")
+    when
+        $languageResult: LanguageRecommended(language.purpose == Purpose.WEB_FRONTEND)
+    then
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        System.out.println("[Rules] Web frontend language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Fast Web Application - Reactive Framework"
+    @Description("Быстрые веб-приложения выигрывают от реактивных фреймворков")
     when
         $request: ProjectRequirementsRequest(
+            timeToShow == TimeToShow.FAST &&
             appType == AppType.WEB
         )
+        $frameworkResult: FrameworkRecommended(framework.isReactive == true)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 9.0);
+        System.out.println("[Rules] Fast web -> Reactive framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Large Team - Established Framework"
+    @Description("Большие команды предпочитают устоявшиеся фреймворки")
+    when
+        $request: ProjectRequirementsRequest(teamSize == TeamSize.BIG)
+        $frameworkResult: FrameworkRecommended(framework.isActual == true)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 8.0);
+        System.out.println("[Rules] Large team -> Established framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Backend Tasks - Backend Frameworks"
+    @Description("Бэкенд задачи требуют соответствующих фреймворков")
+    when
+        $request: ProjectRequirementsRequest(
+            frameworkRequirements != null &&
+            frameworkRequirements.tasksType == TasksType.BACKEND
+        )
+        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.BACKEND)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
+        System.out.println("[Rules] Backend tasks -> Backend framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Frontend Tasks - Frontend Frameworks"
+    @Description("Фронтенд задачи требуют соответствующих фреймворков")
+    when
+        $request: ProjectRequirementsRequest(
+            frameworkRequirements != null &&
+            frameworkRequirements.tasksType == TasksType.FRONTEND
+        )
+        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.FRONTEND)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
+        System.out.println("[Rules] Frontend tasks -> Frontend framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Mobile Development - Mobile Frameworks"
+    @Description("Мобильная разработка требует специализированных фреймворков")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.ANDROID || appType == AppType.IOS)
+        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.MOBILE)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 8.0);
+        System.out.println("[Rules] Mobile app -> Mobile framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Desktop Application - Desktop Frameworks"
+    @Description("Десктопные приложения требуют соответствующих фреймворков")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.DESKTOP)
+        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.DESKTOP)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
+        System.out.println("[Rules] Desktop app -> Desktop framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Framework with Popular Language Support"
+    @Description("Фреймворки, поддерживающие популярные языки, получают бонус")
+    when
         $frameworkResult: FrameworkRecommended($framework: framework)
         Language(popularity == Popularity.POPULAR) from $framework.languages
     then
-        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
-        System.out.println("Rule 'Web Application - Popular Framework' applied to: " +
+        $frameworkResult.setScore($frameworkResult.getScore() + 6.0);
+        System.out.println("[Rules] Framework with popular language: " +
             $framework.getName());
 end
 
-rule "Framework with Specific Language Support"
-    @Description("Bonus for frameworks supporting requested languages")
+rule "Framework with Low Entry Threshold Language"
+    @Description("Фреймворки с языками низкого порога входа хороши для начинающих")
+    when
+        $frameworkResult: FrameworkRecommended($framework: framework)
+        Language(entryThreshold == EntryThreshold.LOW) from $framework.languages
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 5.0);
+        System.out.println("[Rules] Framework with easy language: " +
+            $framework.getName());
+end
+
+rule "Recent Framework Bonus"
+    @Description("Современные, актуальные фреймворки получают бонус")
+    when
+        $frameworkResult: FrameworkRecommended(framework.isActual == true)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 4.0);
+        System.out.println("[Rules] Recent framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Commercial Project - Mature Framework"
+    @Description("Коммерческие проекты требуют зрелых, стабильных фреймворков")
+    when
+        $request: ProjectRequirementsRequest(projectType == ProjectType.COMMERCIAL)
+        $frameworkResult: FrameworkRecommended(framework.isActual == true)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
+        System.out.println("[Rules] Commercial project -> Mature framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Framework Language Match"
+    @Description("Фреймворк поддерживает запрошенные языки")
     when
         $request: ProjectRequirementsRequest($requestedLanguages: languages != null && languages.size() > 0)
         $frameworkResult: FrameworkRecommended($framework: framework)
@@ -86,28 +293,119 @@ rule "Framework with Specific Language Support"
         eval($requestedLanguages.contains($language.getId()))
     then
         $frameworkResult.setScore($frameworkResult.getScore() + 3.0);
-        System.out.println("Rule 'Language Support' applied to framework: " +
-            $framework.getName() + " for language: " + $language.getName());
+        System.out.println("[Rules] Framework supports requested language: " +
+            $framework.getName() + " supports " + $language.getName());
 end
 
-rule "Database Type Match"
-    @Description("Bonus for matching database type requirements")
+rule "Fast Time to Show - Local Storage"
+    @Description("Быстрые проекты требуют локального хранилища")
     when
-        $request: ProjectRequirementsRequest(
-            dataStorageRequirements != null &&
-            dataStorageRequirements.dataBaseType != null
-        )
+        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
         $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == $request.dataStorageRequirements.dataBaseType
+            dataStorage.storageLocation == StorageLocation.LOCAL
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 8.0);
+        System.out.println("[Rules] Fast project -> Local storage: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Large Team - Remote Storage"
+    @Description("Большие команды часто используют удаленные хранилища")
+    when
+        $request: ProjectRequirementsRequest(teamSize == TeamSize.BIG)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageLocation == StorageLocation.REMOTE
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
+        System.out.println("[Rules] Large team -> Remote storage: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Relational Database for Complex Data"
+    @Description("Сложные структуры данных требуют реляционных БД")
+    when
+        $request: ProjectRequirementsRequest(scale == Scale.COMPLEX)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.dataBaseType == DataBaseType.SQL
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
+        System.out.println("[Rules] Complex data -> Relational DB: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "NoSQL for Flexible Schema"
+    @Description("NoSQL БД хороши для гибких схем данных")
+    when
+        $request: ProjectRequirementsRequest(projectType == ProjectType.RESEARCH)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.dataBaseType == DataBaseType.NO_SQL
         )
     then
         $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
-        System.out.println("Rule 'Database Type Match' applied to: " +
+        System.out.println("[Rules] Research project -> NoSQL DB: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Document Storage for Web Applications"
+    @Description("Веб-приложения часто используют документные хранилища")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.WEB)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == StorageType.DOCUMENT
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
+        System.out.println("[Rules] Web app -> Document storage: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Key-Value Storage for High Performance"
+    @Description("Ключ-значение хранилища для высокопроизводительных систем")
+    when
+        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == StorageType.KEY_VALUE
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 8.0);
+        System.out.println("[Rules] Fast app -> Key-value storage: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Commercial Project - Relational DB"
+    @Description("Коммерческие проекты предпочитают реляционные БД")
+    when
+        $request: ProjectRequirementsRequest(projectType == ProjectType.COMMERCIAL)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.dataBaseType == DataBaseType.SQL
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
+        System.out.println("[Rules] Commercial project -> SQL DB: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Storage Type Match"
+    @Description("Совпадение требуемого типа хранилища")
+    when
+        $request: ProjectRequirementsRequest(
+            dataStorageRequirements != null &&
+            dataStorageRequirements.storageType != null
+        )
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == $request.dataStorageRequirements.storageType
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
+        System.out.println("[Rules] Storage type match: " +
             $dataStorageResult.getDataStorage().getName());
 end
 
 rule "Storage Location Match"
-    @Description("Bonus for matching storage location requirements")
+    @Description("Совпадение требуемого расположения хранилища")
     when
         $request: ProjectRequirementsRequest(
             dataStorageRequirements != null &&
@@ -118,176 +416,295 @@ rule "Storage Location Match"
         )
     then
         $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
-        System.out.println("Rule 'Storage Location Match' applied to: " +
+        System.out.println("[Rules] Storage location match: " +
             $dataStorageResult.getDataStorage().getName());
 end
 
-rule "Language Popularity Match"
-    @Description("Bonus for matching language popularity requirements")
-    when
-        $request: ProjectRequirementsRequest(
-            languageRequirements != null &&
-            languageRequirements.popularity != null
-        )
-        $languageResult: LanguageRecommended(
-            language.popularity == $request.languageRequirements.popularity
-        )
-    then
-        $languageResult.setScore($languageResult.getScore() + 4.0);
-        System.out.println("Rule 'Language Popularity Match' applied to: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Framework Reactivity Match"
-    @Description("Bonus for matching framework reactivity requirements")
-    when
-        $request: ProjectRequirementsRequest(
-            frameworkRequirements != null &&
-            frameworkRequirements.isReactive != null
-        )
-        $frameworkResult: FrameworkRecommended(
-            framework.isReactive == $request.frameworkRequirements.isReactive
-        )
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 4.0);
-        System.out.println("Rule 'Framework Reactivity Match' applied to: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Recent Framework Bonus"
-    @Description("Bonus for recently updated frameworks")
-    when
-        $frameworkResult: FrameworkRecommended(
-            framework.isActual == true
-        )
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 2.0);
-        System.out.println("Rule 'Recent Framework Bonus' applied to: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Simple Project - Easy Language"
-    @Description("Simple projects benefit from easy languages")
-    when
-        $request: ProjectRequirementsRequest(
-            projectType == ProjectType.PET
-        )
-        $languageResult: LanguageRecommended(
-            language.entryThreshold == EntryThreshold.LOW
-        )
-    then
-        $languageResult.setScore($languageResult.getScore() + 4.0);
-        System.out.println("Rule 'Simple Project - Easy Language' applied to: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Complex Project - Powerful Language"
-    @Description("Complex projects require powerful languages")
-    when
-        $request: ProjectRequirementsRequest(
-            projectType == ProjectType.COMMERCIAL
-        )
-        $languageResult: LanguageRecommended(
-            language.entryThreshold == EntryThreshold.HIGH
-        )
-    then
-        $languageResult.setScore($languageResult.getScore() + 6.0);
-        System.out.println("Rule 'Complex Project - Powerful Language' applied to: " +
-            $languageResult.getLanguage().getName());
-end
-
-//rule "Large Scale - High Performance Database"
-//    @Description("Large scale projects require high performance databases")
-//    when
-//        $request: ProjectRequirementsRequest(
-//            scale != null && scale.toString().contains("LARGE")
-//        )
-//        $dataStorageResult: DataStorageRecommended(
-//            dataStorage.dataBaseType == DataBaseType.RELATIONAL ||
-//            dataStorage.dataBaseType == DataBaseType.NOSQL
-//        )
-//    then
-//        $dataStorageResult.setScore($dataStorageResult.getScore() + 4.0);
-//        System.out.println("Rule 'Large Scale - High Performance Database' applied to: " +
-//            $dataStorageResult.getDataStorage().getName());
-//end
-
-rule "Small Team - High Productivity Language"
-    @Description("Small teams benefit from high productivity languages")
-    when
-        $request: ProjectRequirementsRequest(
-            teamSize == TeamSize.SMALL
-        )
-        $languageResult: LanguageRecommended(
-            language.entryThreshold == EntryThreshold.LOW ||
-            language.entryThreshold == EntryThreshold.MEDIUM
-        )
-    then
-        $languageResult.setScore($languageResult.getScore() + 3.0);
-        System.out.println("Rule 'Small Team - High Productivity Language' applied to: " +
-            $languageResult.getLanguage().getName());
-end
-
-// Правила для комбинаций
-
-rule "Fast Web Application"
-    @Description("Fast web applications need reactive frameworks")
-    when
-        $request: ProjectRequirementsRequest(
-            timeToShow == TimeToShow.FAST &&
-            appType == AppType.WEB
-        )
-        $frameworkResult: FrameworkRecommended(
-            framework.isReactive == true
-        )
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 8.0);
-        System.out.println("Rule 'Fast Web Application' applied to: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Mobile App - Cross Platform Language"
-    @Description("Mobile apps benefit from cross-platform languages")
-    when
-        $request: ProjectRequirementsRequest(
-            appType == AppType.ANDROID || appType == AppType.IOS
-        )
-        $languageResult: LanguageRecommended(
-            language.purpose == Purpose.MOBILE ||
-            language.purpose == Purpose.UNIVERSAL
-        )
-    then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        System.out.println("Rule 'Mobile App - Cross Platform Language' applied to: " +
-            $languageResult.getLanguage().getName());
-end
-
-// Правила для отрицательных оценок (penalties)
-
-rule "Outdated Framework Penalty"
-    @Description("Penalty for outdated frameworks")
-    when
-        $frameworkResult: FrameworkRecommended(
-            framework.isActual == false
-        )
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() - 3.0);
-        System.out.println("Rule 'Outdated Framework Penalty' applied to: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Mismatched Storage Type Penalty"
-    @Description("Penalty for mismatched storage types")
+rule "Database Type Match"
+    @Description("Совпадение требуемого типа БД")
     when
         $request: ProjectRequirementsRequest(
             dataStorageRequirements != null &&
-            dataStorageRequirements.storageType != null
+            dataStorageRequirements.dataBaseType != null
         )
         $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType != $request.dataStorageRequirements.storageType
+            dataStorage.dataBaseType == $request.dataStorageRequirements.dataBaseType
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() - 2.0);
-        System.out.println("Rule 'Mismatched Storage Type Penalty' applied to: " +
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
+        System.out.println("[Rules] Database type match: " +
             $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Full Stack Web Development"
+    @Description("Полный стек веб-разработки: язык + фреймворк + хранилище")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.WEB)
+        $languageResult: LanguageRecommended(language.purpose == Purpose.WEB_BACKEND)
+        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.BACKEND)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == StorageType.DOCUMENT ||
+            dataStorage.dataBaseType == DataBaseType.SQL
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 3.0);
+        $frameworkResult.setScore($frameworkResult.getScore() + 3.0);
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 3.0);
+        System.out.println("[Rules] Full stack web development combination");
+end
+
+rule "Modern Mobile Stack"
+    @Description("Современный мобильный стек: язык + фреймворк")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.ANDROID || appType == AppType.IOS)
+        $languageResult: LanguageRecommended(language.purpose == Purpose.MOBILE)
+        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.MOBILE)
+    then
+        $languageResult.setScore($languageResult.getScore() + 4.0);
+        $frameworkResult.setScore($frameworkResult.getScore() + 4.0);
+        System.out.println("[Rules] Modern mobile stack combination");
+end
+
+rule "Data Science Pipeline"
+    @Description("Конвейер data science: язык + хранилище")
+    when
+        $languageResult: LanguageRecommended(language.purpose == Purpose.DATA_SCIENCE)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.dataBaseType == DataBaseType.NO_SQL ||
+            dataStorage.storageType == StorageType.DOCUMENT
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 3.0);
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 3.0);
+        System.out.println("[Rules] Data science pipeline combination");
+end
+
+rule "Startup Tech Stack"
+    @Description("Технологический стек для стартапа: быстрый запуск")
+    when
+        $request: ProjectRequirementsRequest(
+            timeToShow == TimeToShow.FAST &&
+            projectType == ProjectType.COMMERCIAL &&
+            teamSize == TeamSize.SMALL
+        )
+        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
+        $frameworkResult: FrameworkRecommended(framework.isReactive == true)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageLocation == StorageLocation.REMOTE &&
+            dataStorage.dataBaseType == DataBaseType.NO_SQL
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        $frameworkResult.setScore($frameworkResult.getScore() + 5.0);
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
+        System.out.println("[Rules] Startup tech stack combination");
+end
+
+rule "Enterprise Tech Stack"
+    @Description("Корпоративный технологический стек")
+    when
+        $request: ProjectRequirementsRequest(
+            projectType == ProjectType.COMMERCIAL &&
+            teamSize == TeamSize.BIG &&
+            scale == Scale.COMPLEX
+        )
+        $languageResult: LanguageRecommended(
+            language.popularity == Popularity.POPULAR &&
+            language.entryThreshold == EntryThreshold.MEDIUM
+        )
+        $frameworkResult: FrameworkRecommended(framework.isActual == true)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.dataBaseType == DataBaseType.SQL &&
+            dataStorage.storageType == StorageType.RELATIONAL
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 6.0);
+        $frameworkResult.setScore($frameworkResult.getScore() + 6.0);
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
+        System.out.println("[Rules] Enterprise tech stack combination");
+end
+
+rule "Penalty - Outdated Framework"
+    @Description("Штраф за устаревшие фреймворки")
+    when
+        $frameworkResult: FrameworkRecommended(framework.isActual == false)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() - 4.0);
+        System.out.println("[Rules] Penalty for outdated framework: " +
+            $frameworkResult.getFramework().getName());
+end
+
+rule "Penalty - Mismatched Purpose"
+    @Description("Штраф за несоответствие цели проекта")
+    when
+        $request: ProjectRequirementsRequest(appType == AppType.WEB)
+        $languageResult: LanguageRecommended(language.purpose == Purpose.MOBILE)
+    then
+        $languageResult.setScore($languageResult.getScore() - 3.0);
+        System.out.println("[Rules] Penalty for mismatched purpose: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Penalty - High Entry for Small Team"
+    @Description("Штраф за сложный язык для маленькой команды")
+    when
+        $request: ProjectRequirementsRequest(teamSize == TeamSize.MICRO || teamSize == TeamSize.SMALL)
+        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.HIGH)
+    then
+        $languageResult.setScore($languageResult.getScore() - 5.0);
+        System.out.println("[Rules] Penalty for complex language in small team: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Penalty - Slow Storage for Fast Project"
+    @Description("Штраф за медленное хранилище для быстрого проекта")
+    when
+        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageLocation == StorageLocation.REMOTE &&
+            dataStorage.storageType == StorageType.RELATIONAL
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() - 4.0);
+        System.out.println("[Rules] Penalty for slow storage in fast project: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Interpretable Languages for Rapid Prototyping"
+    @Description("Интерпретируемые языки для быстрого прототипирования")
+    when
+        $request: ProjectRequirementsRequest(
+            projectType == ProjectType.RESEARCH ||
+            projectType == ProjectType.PET
+        )
+        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.INTERPRETABLE)
+    then
+        $languageResult.setScore($languageResult.getScore() + 7.0);
+        System.out.println("[Rules] Prototyping -> Interpretable language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Compiled Languages for Performance"
+    @Description("Компилируемые языки для высокопроизводительных систем")
+    when
+        $request: ProjectRequirementsRequest(
+            timeToShow == TimeToShow.FAST ||
+            scale == Scale.COMPLEX
+        )
+        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.COMPILED)
+    then
+        $languageResult.setScore($languageResult.getScore() + 6.0);
+        System.out.println("[Rules] Performance -> Compiled language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Hybrid Languages for Flexibility"
+    @Description("Гибридные языки для баланса производительности и гибкости")
+    when
+        $request: ProjectRequirementsRequest(scale == Scale.HARD)
+        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.HYBRID)
+    then
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        System.out.println("[Rules] Complex scale -> Hybrid language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Actual Popularity for Modern Projects"
+    @Description("Актуальные языки для современных проектов")
+    when
+        $request: ProjectRequirementsRequest(
+            projectType == ProjectType.COMMERCIAL ||
+            timeToShow == TimeToShow.FAST
+        )
+        $languageResult: LanguageRecommended(language.popularity == Popularity.ACTUAL)
+    then
+        $languageResult.setScore($languageResult.getScore() + 4.0);
+        System.out.println("[Rules] Modern project -> Actual language: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Document Storage for Unstructured Data"
+    @Description("Документные хранилища для неструктурированных данных")
+    when
+        $request: ProjectRequirementsRequest(scale == Scale.HARD)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == StorageType.DOCUMENT
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
+        System.out.println("[Rules] Hard scale -> Document storage: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Relational Storage for Structured Data"
+    @Description("Реляционные хранилища для структурированных данных")
+    when
+        $request: ProjectRequirementsRequest(scale == Scale.EASY)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == StorageType.RELATIONAL
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
+        System.out.println("[Rules] Easy scale -> Relational storage: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Key-Value for Caching"
+    @Description("Ключ-значение хранилища для кэширования")
+    when
+        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
+        $dataStorageResult: DataStorageRecommended(
+            dataStorage.storageType == StorageType.KEY_VALUE
+        )
+    then
+        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
+        System.out.println("[Rules] Fast project -> Key-value for caching: " +
+            $dataStorageResult.getDataStorage().getName());
+end
+
+rule "Framework with Multiple Language Support"
+    @Description("Фреймворки с поддержкой нескольких языков")
+    when
+        $frameworkResult: FrameworkRecommended($framework: framework)
+        $languageCount: Number() from accumulate(
+            $lang: Language() from $framework.languages,
+            count($lang)
+        )
+        eval($languageCount.intValue() > 1)
+    then
+        $frameworkResult.setScore($frameworkResult.getScore() + 2.0);
+        System.out.println("[Rules] Multi-language framework: " +
+            $framework.getName() + " (" + $languageCount + " languages)");
+end
+
+rule "Language Entry Threshold Match"
+    @Description("Совпадение требуемого порога входа языка")
+    when
+        $request: ProjectRequirementsRequest(
+            languageRequirements != null &&
+            languageRequirements.entryThreshold != null
+        )
+        $languageResult: LanguageRecommended(
+            language.entryThreshold == $request.languageRequirements.entryThreshold
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 5.0);
+        System.out.println("[Rules] Language entry threshold match: " +
+            $languageResult.getLanguage().getName());
+end
+
+rule "Execution Model Match"
+    @Description("Совпадение требуемой модели исполнения")
+    when
+        $request: ProjectRequirementsRequest(
+            languageRequirements != null &&
+            languageRequirements.executionModel != null
+        )
+        $languageResult: LanguageRecommended(
+            language.executionModel == $request.languageRequirements.executionModel
+        )
+    then
+        $languageResult.setScore($languageResult.getScore() + 4.0);
+        System.out.println("[Rules] Execution model match: " +
+            $languageResult.getLanguage().getName());
 end

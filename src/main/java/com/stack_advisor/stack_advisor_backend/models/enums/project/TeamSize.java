@@ -6,5 +6,6 @@ public enum TeamSize {
     @JsonProperty("micro") MICRO,
     @JsonProperty("small") SMALL,
     @JsonProperty("medium") MEDIUM,
-    @JsonProperty("big") BIG
+    @JsonProperty("big") BIG,
+    @JsonProperty("unknown") UNKNOWN
 }

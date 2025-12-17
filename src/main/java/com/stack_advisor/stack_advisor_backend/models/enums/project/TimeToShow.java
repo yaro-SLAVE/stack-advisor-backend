@@ -6,5 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public enum TimeToShow {
     @JsonProperty("fast") FAST,
     @JsonProperty("medium") MEDIUM,
-    @JsonProperty("slow") SLOW
+    @JsonProperty("slow") SLOW,
+    @JsonProperty("unknown") UNKNOWN
 }

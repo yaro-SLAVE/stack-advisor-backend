@@ -56,7 +56,6 @@ public class ExplanationService {
             log.info("Logging {} rule executions for session {}", executions.size(), sessionId);
 
             for (CustomAgendaEventListener.RuleExecution execution : executions) {
-                // Находим соответствующие активации для этого правила
                 String activatedObjects = activations.stream()
                         .filter(ra -> ra.getRuleName().equals(execution.getRuleName()))
                         .findFirst()
@@ -88,11 +87,9 @@ public class ExplanationService {
                                      ProjectRequirementsRequest request) {
 
         try {
-            // Получаем информацию о выполненных правилах
             List<CustomAgendaEventListener.RuleExecution> ruleExecutions =
                     agendaEventListener.getRuleExecutions(sessionId);
 
-            // Создаем карту правил для быстрого поиска
             Map<String, List<CustomAgendaEventListener.RuleExecution>> rulesByItem =
                     new HashMap<>();
 
@@ -107,13 +104,10 @@ public class ExplanationService {
                 }
             }
 
-            // Генерация объяснений для языков
             generateLanguageExplanations(sessionId, languageResults, request, rulesByItem);
 
-            // Генерация объяснений для фреймворков
             generateFrameworkExplanations(sessionId, frameworkResults, request, rulesByItem);
 
-            // Генерация объяснений для хранилищ данных
             generateDataStorageExplanations(sessionId, dataStorageResults, request, rulesByItem);
 
             log.info("Generated explanations for session {}", sessionId);
@@ -130,14 +124,13 @@ public class ExplanationService {
             List<String> explanations = new ArrayList<>();
             Language language = result.getLanguage();
 
-            // Проверка соответствия требованиям
             if (request.getLanguageRequirements() != null) {
                 LanguageRequirementsRequest req = request.getLanguageRequirements();
 
                 if (req.getEntryThreshold() != null &&
                         language.getEntryThreshold() == req.getEntryThreshold()) {
                     explanations.add(String.format(
-                            "✓ Соответствует требуемому порогу вхождения: %s",
+                            "Соответствует требуемому порогу вхождения: %s",
                             req.getEntryThreshold()));
                 }
 
@@ -151,30 +144,29 @@ public class ExplanationService {
                 if (req.getPopularity() != null &&
                         language.getPopularity() == req.getPopularity()) {
                     explanations.add(String.format(
-                            "✓ Соответствует требуемой популярности: %s",
+                            "Соответствует требуемой популярности: %s",
                             req.getPopularity()));
                 }
 
                 if (req.getPurpose() != null &&
                         language.getPurpose() == req.getPurpose()) {
                     explanations.add(String.format(
-                            "✓ Подходит для цели: %s",
+                            "Подходит для цели: %s",
                             req.getPurpose()));
                 }
             }
 
-            // Добавляем информацию о примененных правилах
             String itemKey = "language_" + language.getId();
             if (rulesByItem.containsKey(itemKey)) {
                 rulesByItem.get(itemKey).forEach(rule -> {
                     explanations.add(String.format(
-                            "🔧 Применено правило '%s'", rule.getRuleName()));
+                            "Применено правило '%s'", rule.getRuleName()));
                 });
             }
 
             if (result.getScore() > 0) {
                 explanations.add(String.format(
-                        "📊 Итоговый балл: %.2f", result.getScore()));
+                        "Итоговый балл: %.2f", result.getScore()));
             }
 
             saveExplanation(sessionId, "LANGUAGE",
@@ -197,47 +189,45 @@ public class ExplanationService {
                 if (req.getIsReactive() != null &&
                         framework.getIsReactive() == req.getIsReactive()) {
                     explanations.add(String.format(
-                            "✓ Соответствует требованию реактивности: %s",
+                            "Соответствует требованию реактивности: %s",
                             req.getIsReactive()));
                 }
 
                 if (req.getIsActual() != null &&
                         framework.getIsActual() == req.getIsActual()) {
                     explanations.add(String.format(
-                            "✓ Соответствует требованию актуальности: %s",
+                            "Соответствует требованию актуальности: %s",
                             req.getIsActual()));
                 }
 
                 if (req.getTasksType() != null &&
                         framework.getTasksType() == req.getTasksType()) {
                     explanations.add(String.format(
-                            "✓ Подходит для типа задач: %s",
+                            "Подходит для типа задач: %s",
                             req.getTasksType()));
                 }
             }
 
-            // Проверяем языки фреймворка
             if (request.getLanguages() != null && !request.getLanguages().isEmpty()) {
                 boolean hasMatchingLanguage = framework.getLanguages().stream()
                         .anyMatch(lang -> request.getLanguages().contains(lang.getId()));
 
                 if (hasMatchingLanguage) {
-                    explanations.add("✓ Поддерживает выбранные языки программирования");
+                    explanations.add("Поддерживает выбранные языки программирования");
                 }
             }
 
-            // Добавляем информацию о примененных правилах
             String itemKey = "framework_" + framework.getId();
             if (rulesByItem.containsKey(itemKey)) {
                 rulesByItem.get(itemKey).forEach(rule -> {
                     explanations.add(String.format(
-                            "🔧 Применено правило '%s'", rule.getRuleName()));
+                            "Применено правило '%s'", rule.getRuleName()));
                 });
             }
 
             if (result.getScore() > 0) {
                 explanations.add(String.format(
-                        "📊 Итоговый балл: %.2f", result.getScore()));
+                        "Итоговый балл: %.2f", result.getScore()));
             }
 
             saveExplanation(sessionId, "FRAMEWORK",
@@ -260,37 +250,36 @@ public class ExplanationService {
                 if (req.getStorageType() != null &&
                         dataStorage.getStorageType() == req.getStorageType()) {
                     explanations.add(String.format(
-                            "✓ Соответствует типу хранилища: %s",
+                            "Соответствует типу хранилища: %s",
                             req.getStorageType()));
                 }
 
                 if (req.getStorageLocation() != null &&
                         dataStorage.getStorageLocation() == req.getStorageLocation()) {
                     explanations.add(String.format(
-                            "✓ Соответствует местоположению: %s",
+                            "Соответствует местоположению: %s",
                             req.getStorageLocation()));
                 }
 
                 if (req.getDataBaseType() != null &&
                         dataStorage.getDataBaseType() == req.getDataBaseType()) {
                     explanations.add(String.format(
-                            "✓ Соответствует типу БД: %s",
+                            "Соответствует типу БД: %s",
                             req.getDataBaseType()));
                 }
             }
 
-            // Добавляем информацию о примененных правилах
             String itemKey = "datastorage_" + dataStorage.getId();
             if (rulesByItem.containsKey(itemKey)) {
                 rulesByItem.get(itemKey).forEach(rule -> {
                     explanations.add(String.format(
-                            "🔧 Применено правило '%s'", rule.getRuleName()));
+                            "Применено правило '%s'", rule.getRuleName()));
                 });
             }
 
             if (result.getScore() > 0) {
                 explanations.add(String.format(
-                        "📊 Итоговый балл: %.2f", result.getScore()));
+                        "Итоговый балл: %.2f", result.getScore()));
             }
 
             saveExplanation(sessionId, "DATA_STORAGE",
@@ -300,7 +289,6 @@ public class ExplanationService {
     }
 
     private String extractItemIdFromScoreChange(String scoreChange) {
-        // Ищем паттерн "(ID: X)" в строке изменения балла
         Pattern pattern = Pattern.compile("\\(ID: (\\d+)\\)");
         Matcher matcher = pattern.matcher(scoreChange);
         if (matcher.find()) {
@@ -353,7 +341,6 @@ public class ExplanationService {
         summary.put("totalRulesExecuted", logs.size());
         summary.put("sessionCreated", LocalDateTime.now().toString());
 
-        // Группируем объяснения по типам
         Map<String, Long> explanationsByType = explanations.stream()
                 .collect(Collectors.groupingBy(
                         RecommendationExplanation::getRecommendationType,
@@ -361,7 +348,6 @@ public class ExplanationService {
                 ));
         summary.put("explanationsByType", explanationsByType);
 
-        // Группируем логи по правилам
         Map<String, Long> rulesExecuted = logs.stream()
                 .collect(Collectors.groupingBy(
                         RuleExecutionLog::getRuleName,
@@ -369,14 +355,12 @@ public class ExplanationService {
                 ));
         summary.put("rulesExecuted", rulesExecuted);
 
-        // Средний балл по рекомендациям
         Double averageScore = explanations.stream()
                 .mapToDouble(RecommendationExplanation::getFinalScore)
                 .average()
                 .orElse(0.0);
         summary.put("averageRecommendationScore", String.format("%.2f", averageScore));
 
-        // Топ рекомендаций
         List<Map<String, Object>> topRecommendations = explanations.stream()
                 .sorted((a, b) -> Double.compare(b.getFinalScore(), a.getFinalScore()))
                 .limit(5)

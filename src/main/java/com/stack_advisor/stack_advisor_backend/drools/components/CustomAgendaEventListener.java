@@ -89,7 +89,6 @@ public class CustomAgendaEventListener implements AgendaEventListener {
         List<String> scoreChanges = new ArrayList<>();
         Map<String, Object> context = new HashMap<>();
 
-        // Сохраняем контекст правила
         context.put("rule", ruleName);
         context.put("timestamp", LocalDateTime.now().toString());
         context.put("sessionId", sessionId);
