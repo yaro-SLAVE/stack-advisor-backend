@@ -50,7 +50,7 @@ public class Technology {
     private String bestFor;
 
     public enum TechnologyCategory {
-        BACKEND, FRONTEND, DATABASE, DEVOPS, MOBILE, AI_ML, TESTING
+        BACKEND, FRONTEND, DATABASE, IOS, ANDROID, MOBILE_HYBRID, UNKNOWN
     }
 
     public enum LicenseType {

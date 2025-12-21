@@ -1,5 +1,7 @@
 package com.stack_advisor.stack_advisor_backend.components;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.kie.api.event.rule.*;
 import org.springframework.stereotype.Component;
 
@@ -68,12 +70,12 @@ public class ExplanationAgendaListener implements AgendaEventListener {
 
     @Override
     public void afterRuleFlowGroupActivated(RuleFlowGroupActivatedEvent event) {
-        // After rule flow group activated
+
     }
 
     @Override
     public void beforeRuleFlowGroupDeactivated(RuleFlowGroupDeactivatedEvent event) {
-        // Before rule flow group deactivated
+
     }
 
     public List<String> getFiredRules() {
@@ -91,23 +93,15 @@ public class ExplanationAgendaListener implements AgendaEventListener {
 
     @Override
     public void afterRuleFlowGroupDeactivated(RuleFlowGroupDeactivatedEvent event) {
-        // Legacy method for compatibility
+
     }
 
+    @Getter
+    @Setter
     public static class RuleMatch {
         private String ruleName;
         private String rulePackage;
         private Object[] facts;
         private long timestamp;
-
-        // Getters and setters
-        public String getRuleName() { return ruleName; }
-        public void setRuleName(String ruleName) { this.ruleName = ruleName; }
-        public String getRulePackage() { return rulePackage; }
-        public void setRulePackage(String rulePackage) { this.rulePackage = rulePackage; }
-        public Object[] getFacts() { return facts; }
-        public void setFacts(Object[] facts) { this.facts = facts; }
-        public long getTimestamp() { return timestamp; }
-        public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
     }
 }

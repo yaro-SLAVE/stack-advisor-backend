@@ -2,12 +2,16 @@ package com.stack_advisor.stack_advisor_backend.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "sessions")
 public class Session {
@@ -34,29 +38,6 @@ public class Session {
     @Column(name = "total_rules_fired")
     private Integer totalRulesFired;
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getSessionId() { return sessionId; }
-    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
-
-    public ProjectRequirements getRequirements() { return requirements; }
-    public void setRequirements(ProjectRequirements requirements) { this.requirements = requirements; }
-
-    public List<RuleExecutionLog> getExecutionLogs() { return executionLogs; }
-    public void setExecutionLogs(List<RuleExecutionLog> executionLogs) { this.executionLogs = executionLogs; }
-
-    public LocalDateTime getStartedAt() { return startedAt; }
-    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
-
-    public LocalDateTime getEndedAt() { return endedAt; }
-    public void setEndedAt(LocalDateTime endedAt) { this.endedAt = endedAt; }
-
-    public Integer getTotalRulesFired() { return totalRulesFired; }
-    public void setTotalRulesFired(Integer totalRulesFired) { this.totalRulesFired = totalRulesFired; }
-
-    // Переопределяем toString БЕЗ циклических ссылок
     @Override
     public String toString() {
         return "Session{" +
@@ -70,7 +51,6 @@ public class Session {
                 '}';
     }
 
-    // equals и hashCode только по id
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

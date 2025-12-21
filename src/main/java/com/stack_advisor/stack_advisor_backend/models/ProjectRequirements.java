@@ -2,6 +2,7 @@ package com.stack_advisor.stack_advisor_backend.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,8 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "project_requirements")
+@Getter
+@Setter
 public class ProjectRequirements {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,50 +63,6 @@ public class ProjectRequirements {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public ProjectType getProjectType() { return projectType; }
-    public void setProjectType(ProjectType projectType) { this.projectType = projectType; }
-
-    public TeamExperience getTeamExperience() { return teamExperience; }
-    public void setTeamExperience(TeamExperience teamExperience) { this.teamExperience = teamExperience; }
-
-    public Boolean getNeedHighLoad() { return needHighLoad; }
-    public void setNeedHighLoad(Boolean needHighLoad) { this.needHighLoad = needHighLoad; }
-
-    public Boolean getNeedRealTime() { return needRealTime; }
-    public void setNeedRealTime(Boolean needRealTime) { this.needRealTime = needRealTime; }
-
-    public Boolean getNeedHighSecurity() { return needHighSecurity; }
-    public void setNeedHighSecurity(Boolean needHighSecurity) { this.needHighSecurity = needHighSecurity; }
-
-    public BudgetLevel getBudget() { return budget; }
-    public void setBudget(BudgetLevel budget) { this.budget = budget; }
-
-    public TimeToMarket getTimeToMarket() { return timeToMarket; }
-    public void setTimeToMarket(TimeToMarket timeToMarket) { this.timeToMarket = timeToMarket; }
-
-    public TeamSize getTeamSize() { return teamSize; }
-    public void setTeamSize(TeamSize teamSize) { this.teamSize = teamSize; }
-
-    public Integer getTeamMembers() { return teamMembers; }
-    public void setTeamMembers(Integer teamMembers) { this.teamMembers = teamMembers; }
-
-    public Session getSession() { return session; }
-    public void setSession(Session session) { this.session = session; }
-
-    public List<TechnologyRecommendation> getRecommendations() { return recommendations; }
-    public void setRecommendations(List<TechnologyRecommendation> recommendations) { this.recommendations = recommendations; }
-
-    public String getExplanationChain() { return explanationChain; }
-    public void setExplanationChain(String explanationChain) { this.explanationChain = explanationChain; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    // Переопределяем toString БЕЗ циклических ссылок
     @Override
     public String toString() {
         return "ProjectRequirements{" +
@@ -123,7 +82,6 @@ public class ProjectRequirements {
                 '}';
     }
 
-    // equals и hashCode только по id
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -155,7 +113,7 @@ public class ProjectRequirements {
     }
 
     public enum ProjectType {
-        WEB, MOBILE, DESKTOP, AI_ML, DEVOPS, GAME
+        WEB, MOBILE, DESKTOP, GAME, UNKNOWN
     }
 
     public enum TeamExperience {

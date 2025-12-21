@@ -17,7 +17,6 @@ public class ProjectRequirementsDTO implements Serializable {
     private ProjectRequirements.BudgetLevel budget;
     private ProjectRequirements.TimeToMarket timeToMarket;
     private ProjectRequirements.TeamSize teamSize;
-    private Integer teamMembers;
     private String explanationChain;
     private LocalDateTime createdAt;
 
@@ -36,7 +35,6 @@ public class ProjectRequirementsDTO implements Serializable {
         dto.setBudget(requirements.getBudget());
         dto.setTimeToMarket(requirements.getTimeToMarket());
         dto.setTeamSize(requirements.getTeamSize());
-        dto.setTeamMembers(requirements.getTeamMembers());
         dto.setExplanationChain(requirements.getExplanationChain());
         dto.setCreatedAt(requirements.getCreatedAt());
 
