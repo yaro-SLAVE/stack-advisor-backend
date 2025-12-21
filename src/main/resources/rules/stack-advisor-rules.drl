@@ -1,710 +1,1228 @@
-import com.stack_advisor.stack_advisor_backend.requests.ProjectRequirementsRequest
+import com.stack_advisor.stack_advisor_backend.models.TechnologyRecommendation
+import com.stack_advisor.stack_advisor_backend.models.RuleExecutionLog
+import com.stack_advisor.stack_advisor_backend.models.ProjectRequirements
+import com.stack_advisor.stack_advisor_backend.models.Technology
 
-import com.stack_advisor.stack_advisor_backend.models.enums.project.ProjectType
-import com.stack_advisor.stack_advisor_backend.models.enums.project.TeamSize
-import com.stack_advisor.stack_advisor_backend.models.enums.project.AppType
-import com.stack_advisor.stack_advisor_backend.models.enums.project.TimeToShow
-import com.stack_advisor.stack_advisor_backend.models.enums.project.Scale
+import com.stack_advisor.stack_advisor_backend.services.AuditLogService
+import java.util.List
 
-import com.stack_advisor.stack_advisor_backend.models.enums.language.Purpose
-import com.stack_advisor.stack_advisor_backend.models.enums.language.EntryThreshold
-import com.stack_advisor.stack_advisor_backend.models.enums.language.Popularity
-import com.stack_advisor.stack_advisor_backend.models.enums.language.ExecutionModel
-import com.stack_advisor.stack_advisor_backend.models.enums.framework.TasksType
+global List recommendations
+global AuditLogService auditLogService
 
-import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.StorageLocation
-import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.StorageType
-import com.stack_advisor.stack_advisor_backend.models.enums.dataStorage.DataBaseType
-
-import com.stack_advisor.stack_advisor_backend.drools.data.LanguageRecommended
-import com.stack_advisor.stack_advisor_backend.drools.data.DataStorageRecommended
-import com.stack_advisor.stack_advisor_backend.drools.data.FrameworkRecommended
-
-import com.stack_advisor.stack_advisor_backend.models.Language
-
-rule "Fast Time to Show - Easy Languages"
-    @Description("Быстрые проекты требуют языков с низким порогом входа")
+// Правило 1: Java Spring Boot для enterprise веб-приложений
+rule "Recommend Spring Boot for Enterprise Web Application"
     when
-        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
-        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
-    then
-        $languageResult.setScore($languageResult.getScore() + 8.0);
-        System.out.println("[Rules] Fast project -> Easy language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Large Team - Standardized Languages"
-    @Description("Большие команды нуждаются в популярных, стандартизированных языках")
-    when
-        $request: ProjectRequirementsRequest(teamSize == TeamSize.BIG || teamSize == TeamSize.MEDIUM)
-        $languageResult: LanguageRecommended(language.popularity == Popularity.POPULAR)
-    then
-        $languageResult.setScore($languageResult.getScore() + 7.0);
-        System.out.println("[Rules] Large team -> Popular language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Small Team - Productive Languages"
-    @Description("Маленькие команды выигрывают от языков с высокой продуктивностью")
-    when
-        $request: ProjectRequirementsRequest(teamSize == TeamSize.MICRO || teamSize == TeamSize.SMALL)
-        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
-    then
-        $languageResult.setScore($languageResult.getScore() + 6.0);
-        System.out.println("[Rules] Small team -> Productive language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Web Backend - Compiled Languages"
-    @Description("Для бэкенда веб-приложений предпочтительны компилируемые языки")
-    when
-        $request: ProjectRequirementsRequest(appType == AppType.WEB)
-        $languageResult: LanguageRecommended(
-            language.executionModel == ExecutionModel.COMPILED &&
-            language.purpose == Purpose.WEB_BACKEND
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.WEB,
+            teamExperience == ProjectRequirements.TeamExperience.JAVA,
+            budget == ProjectRequirements.BudgetLevel.HIGH,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Spring Boot",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 9.0);
-        System.out.println("[Rules] Web backend -> Compiled language: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.95);
+        rec.setReason("Spring Boot - лучший выбор для enterprise веб-приложений на Java с высокой нагрузкой");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Spring Boot selected for enterprise web", "Java team, high budget, high load");
 end
 
-rule "Mobile Development - Mobile Purpose"
-    @Description("Для мобильной разработки нужны языки с соответствующей специализацией")
+// Правило 2: Node.js для real-time и быстрого старта
+rule "Recommend Node.js for Real-time Fast Development"
     when
-        $request: ProjectRequirementsRequest(appType == AppType.ANDROID || appType == AppType.IOS)
-        $languageResult: LanguageRecommended(language.purpose == Purpose.MOBILE)
-    then
-        $languageResult.setScore($languageResult.getScore() + 8.0);
-        System.out.println("[Rules] Mobile app -> Mobile language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Desktop Application - Universal Languages"
-    @Description("Десктопные приложения часто используют универсальные языки")
-    when
-        $request: ProjectRequirementsRequest(appType == AppType.DESKTOP)
-        $languageResult: LanguageRecommended(language.purpose == Purpose.UNIVERSAL)
-    then
-        $languageResult.setScore($languageResult.getScore() + 7.0);
-        System.out.println("[Rules] Desktop app -> Universal language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Complex Project - Powerful Languages"
-    @Description("Сложные проекты требуют мощных языков с высоким порогом входа")
-    when
-        $request: ProjectRequirementsRequest(scale == Scale.COMPLEX || scale == Scale.HARD)
-        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.HIGH)
-    then
-        $languageResult.setScore($languageResult.getScore() + 8.0);
-        System.out.println("[Rules] Complex project -> Powerful language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Easy Project - Simple Languages"
-    @Description("Простые проекты выигрывают от легких в изучении языков")
-    when
-        $request: ProjectRequirementsRequest(scale == Scale.EASY)
-        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
-    then
-        $languageResult.setScore($languageResult.getScore() + 6.0);
-        System.out.println("[Rules] Easy project -> Simple language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Commercial Project - Popular Languages"
-    @Description("Коммерческие проекты требуют популярных, проверенных языков")
-    when
-        $request: ProjectRequirementsRequest(projectType == ProjectType.COMMERCIAL)
-        $languageResult: LanguageRecommended(language.popularity == Popularity.POPULAR)
-    then
-        $languageResult.setScore($languageResult.getScore() + 7.0);
-        System.out.println("[Rules] Commercial project -> Popular language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Research Project - Flexible Languages"
-    @Description("Исследовательские проекты требуют гибких, интерпретируемых языков")
-    when
-        $request: ProjectRequirementsRequest(projectType == ProjectType.RESEARCH)
-        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.INTERPRETABLE)
-    then
-        $languageResult.setScore($languageResult.getScore() + 6.0);
-        System.out.println("[Rules] Research project -> Interpretable language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Pet Project - Modern Languages"
-    @Description("Личные проекты часто используют современные, актуальные языки")
-    when
-        $request: ProjectRequirementsRequest(projectType == ProjectType.PET)
-        $languageResult: LanguageRecommended(language.popularity == Popularity.ACTUAL)
-    then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        System.out.println("[Rules] Pet project -> Modern language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Data Science Purpose Match"
-    @Description("Проекты data science требуют специализированных языков")
-    when
-        $languageResult: LanguageRecommended(language.purpose == Purpose.DATA_SCIENCE)
-    then
-        $languageResult.setScore($languageResult.getScore() + 4.0);
-        System.out.println("[Rules] Data science language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Web Frontend Purpose Match"
-    @Description("Фронтенд разработка требует соответствующих языков")
-    when
-        $languageResult: LanguageRecommended(language.purpose == Purpose.WEB_FRONTEND)
-    then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        System.out.println("[Rules] Web frontend language: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Fast Web Application - Reactive Framework"
-    @Description("Быстрые веб-приложения выигрывают от реактивных фреймворков")
-    when
-        $request: ProjectRequirementsRequest(
-            timeToShow == TimeToShow.FAST &&
-            appType == AppType.WEB
+        $req: ProjectRequirements(
+            needRealTime == true,
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            teamExperience in (ProjectRequirements.TeamExperience.JAVASCRIPT, ProjectRequirements.TeamExperience.MIXED)
         )
-        $frameworkResult: FrameworkRecommended(framework.isReactive == true)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 9.0);
-        System.out.println("[Rules] Fast web -> Reactive framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Large Team - Established Framework"
-    @Description("Большие команды предпочитают устоявшиеся фреймворки")
-    when
-        $request: ProjectRequirementsRequest(teamSize == TeamSize.BIG)
-        $frameworkResult: FrameworkRecommended(framework.isActual == true)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 8.0);
-        System.out.println("[Rules] Large team -> Established framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Backend Tasks - Backend Frameworks"
-    @Description("Бэкенд задачи требуют соответствующих фреймворков")
-    when
-        $request: ProjectRequirementsRequest(
-            frameworkRequirements != null &&
-            frameworkRequirements.tasksType == TasksType.BACKEND
-        )
-        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.BACKEND)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
-        System.out.println("[Rules] Backend tasks -> Backend framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Frontend Tasks - Frontend Frameworks"
-    @Description("Фронтенд задачи требуют соответствующих фреймворков")
-    when
-        $request: ProjectRequirementsRequest(
-            frameworkRequirements != null &&
-            frameworkRequirements.tasksType == TasksType.FRONTEND
-        )
-        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.FRONTEND)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
-        System.out.println("[Rules] Frontend tasks -> Frontend framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Mobile Development - Mobile Frameworks"
-    @Description("Мобильная разработка требует специализированных фреймворков")
-    when
-        $request: ProjectRequirementsRequest(appType == AppType.ANDROID || appType == AppType.IOS)
-        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.MOBILE)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 8.0);
-        System.out.println("[Rules] Mobile app -> Mobile framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Desktop Application - Desktop Frameworks"
-    @Description("Десктопные приложения требуют соответствующих фреймворков")
-    when
-        $request: ProjectRequirementsRequest(appType == AppType.DESKTOP)
-        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.DESKTOP)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
-        System.out.println("[Rules] Desktop app -> Desktop framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Framework with Popular Language Support"
-    @Description("Фреймворки, поддерживающие популярные языки, получают бонус")
-    when
-        $frameworkResult: FrameworkRecommended($framework: framework)
-        Language(popularity == Popularity.POPULAR) from $framework.languages
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 6.0);
-        System.out.println("[Rules] Framework with popular language: " +
-            $framework.getName());
-end
-
-rule "Framework with Low Entry Threshold Language"
-    @Description("Фреймворки с языками низкого порога входа хороши для начинающих")
-    when
-        $frameworkResult: FrameworkRecommended($framework: framework)
-        Language(entryThreshold == EntryThreshold.LOW) from $framework.languages
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 5.0);
-        System.out.println("[Rules] Framework with easy language: " +
-            $framework.getName());
-end
-
-rule "Recent Framework Bonus"
-    @Description("Современные, актуальные фреймворки получают бонус")
-    when
-        $frameworkResult: FrameworkRecommended(framework.isActual == true)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 4.0);
-        System.out.println("[Rules] Recent framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Commercial Project - Mature Framework"
-    @Description("Коммерческие проекты требуют зрелых, стабильных фреймворков")
-    when
-        $request: ProjectRequirementsRequest(projectType == ProjectType.COMMERCIAL)
-        $frameworkResult: FrameworkRecommended(framework.isActual == true)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 7.0);
-        System.out.println("[Rules] Commercial project -> Mature framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Framework Language Match"
-    @Description("Фреймворк поддерживает запрошенные языки")
-    when
-        $request: ProjectRequirementsRequest($requestedLanguages: languages != null && languages.size() > 0)
-        $frameworkResult: FrameworkRecommended($framework: framework)
-        $language: Language() from $framework.languages
-        eval($requestedLanguages.contains($language.getId()))
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() + 3.0);
-        System.out.println("[Rules] Framework supports requested language: " +
-            $framework.getName() + " supports " + $language.getName());
-end
-
-rule "Fast Time to Show - Local Storage"
-    @Description("Быстрые проекты требуют локального хранилища")
-    when
-        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation == StorageLocation.LOCAL
+        $tech: Technology(
+            name == "Node.js",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 8.0);
-        System.out.println("[Rules] Fast project -> Local storage: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.90);
+        rec.setReason("Node.js с event-driven архитектурой идеален для real-time приложений и быстрой разработки");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Node.js for real-time", "Real-time required, fast development");
 end
 
-rule "Large Team - Remote Storage"
-    @Description("Большие команды часто используют удаленные хранилища")
+// Правило 3: Python Django для быстрого прототипирования
+rule "Recommend Django for Rapid Prototyping"
     when
-        $request: ProjectRequirementsRequest(teamSize == TeamSize.BIG)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation == StorageLocation.REMOTE
+        $req: ProjectRequirements(
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            teamSize == ProjectRequirements.TeamSize.SMALL,
+            budget == ProjectRequirements.BudgetLevel.LOW
+        )
+        $tech: Technology(
+            name == "Django",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
-        System.out.println("[Rules] Large team -> Remote storage: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.85);
+        rec.setReason("Django с batteries-included подходом позволяет быстро создать прототип");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Django for prototyping", "Fast time-to-market, small team, low budget");
 end
 
-rule "Relational Database for Complex Data"
-    @Description("Сложные структуры данных требуют реляционных БД")
+// Правило 4: .NET для высоконагруженных enterprise систем
+rule "Recommend .NET for High Load Enterprise"
     when
-        $request: ProjectRequirementsRequest(scale == Scale.COMPLEX)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == DataBaseType.SQL
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            needHighSecurity == true,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE
+        )
+        $tech: Technology(
+            name == "ASP.NET Core",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
-        System.out.println("[Rules] Complex data -> Relational DB: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.92);
+        rec.setReason("ASP.NET Core предоставляет enterprise-уровень производительности и безопасности");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation(".NET for enterprise", "High load, high security, enterprise budget");
 end
 
-rule "NoSQL for Flexible Schema"
-    @Description("NoSQL БД хороши для гибких схем данных")
+// Правило 5: Go для микросервисов и высокой производительности
+rule "Recommend Go for Microservices Performance"
     when
-        $request: ProjectRequirementsRequest(projectType == ProjectType.RESEARCH)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == DataBaseType.NO_SQL
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            teamSize == ProjectRequirements.TeamSize.MEDIUM,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "Go (Golang)",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
-        System.out.println("[Rules] Research project -> NoSQL DB: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.88);
+        rec.setReason("Go обеспечивает высокую производительность и идеален для микросервисной архитектуры");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Go for microservices", "High load, medium team, high budget");
 end
 
-rule "Document Storage for Web Applications"
-    @Description("Веб-приложения часто используют документные хранилища")
+// Правило 6: PHP Laravel для небольших бизнес-проектов
+rule "Recommend Laravel for Small Business Projects"
     when
-        $request: ProjectRequirementsRequest(appType == AppType.WEB)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == StorageType.DOCUMENT
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.LOW,
+            teamExperience == ProjectRequirements.TeamExperience.PHP,
+            projectType == ProjectRequirements.ProjectType.WEB
+        )
+        $tech: Technology(
+            name == "Laravel",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
-        System.out.println("[Rules] Web app -> Document storage: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.80);
+        rec.setReason("Laravel отлично подходит для небольших бизнес-проектов с PHP стеком");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Laravel for small business", "Low budget, PHP team, web project");
 end
 
-rule "Key-Value Storage for High Performance"
-    @Description("Ключ-значение хранилища для высокопроизводительных систем")
+// Правило 7: Spring Boot как альтернатива для Java проектов
+rule "Recommend Spring Boot as Java Alternative"
     when
-        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == StorageType.KEY_VALUE
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.JAVA,
+            projectType == ProjectRequirements.ProjectType.WEB,
+            budget != ProjectRequirements.BudgetLevel.LOW
+        )
+        $tech: Technology(
+            name == "Spring Boot",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 8.0);
-        System.out.println("[Rules] Fast app -> Key-value storage: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.75);
+        rec.setReason("Spring Boot как стандартный выбор для Java веб-разработки");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Spring Boot alternative", "Java team, web project, not low budget");
 end
 
-rule "Commercial Project - Relational DB"
-    @Description("Коммерческие проекты предпочитают реляционные БД")
+// Правило 8: Не рекомендовать Django для high-load
+rule "Not Recommend Django for High Load"
     when
-        $request: ProjectRequirementsRequest(projectType == ProjectType.COMMERCIAL)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == DataBaseType.SQL
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "Django",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
-        System.out.println("[Rules] Commercial project -> SQL DB: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.60);
+        rec.setReason("Django может не справиться с экстремально высокой нагрузкой в enterprise проектах");
+        rec.setPriority(5);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.NOT_RECOMMENDED);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Avoid Django for high load", "High load, high budget");
 end
 
-rule "Storage Type Match"
-    @Description("Совпадение требуемого типа хранилища")
+// Правило 9: Kotlin для современных Android приложений
+rule "Recommend Kotlin for Modern Android"
     when
-        $request: ProjectRequirementsRequest(
-            dataStorageRequirements != null &&
-            dataStorageRequirements.storageType != null
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.MOBILE,
+            teamExperience == ProjectRequirements.TeamExperience.JAVA
         )
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == $request.dataStorageRequirements.storageType
+        $tech: Technology(
+            name == "Kotlin",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
-        System.out.println("[Rules] Storage type match: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.90);
+        rec.setReason("Kotlin - рекомендованный Google язык для разработки под Android");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Kotlin for Android", "Mobile project, Java team");
 end
 
-rule "Storage Location Match"
-    @Description("Совпадение требуемого расположения хранилища")
+// Правило 10: Ruby on Rails для MVP и стартапов
+rule "Recommend Ruby on Rails for MVP"
     when
-        $request: ProjectRequirementsRequest(
-            dataStorageRequirements != null &&
-            dataStorageRequirements.storageLocation != null
-        )
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation == $request.dataStorageRequirements.storageLocation
+        $req: ProjectRequirements(
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            budget == ProjectRequirements.BudgetLevel.LOW,
+            teamSize == ProjectRequirements.TeamSize.SMALL
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
-        System.out.println("[Rules] Storage location match: " +
-            $dataStorageResult.getDataStorage().getName());
+        // Ruby on Rails может быть добавлен в базу технологий
+        auditLogService.logInfo("Consider Ruby on Rails for MVP development");
 end
 
-rule "Database Type Match"
-    @Description("Совпадение требуемого типа БД")
+// Правило 11: FastAPI для AI/ML проектов на Python
+rule "Recommend FastAPI for AI ML Projects"
     when
-        $request: ProjectRequirementsRequest(
-            dataStorageRequirements != null &&
-            dataStorageRequirements.dataBaseType != null
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.AI_ML,
+            teamExperience == ProjectRequirements.TeamExperience.PYTHON
         )
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == $request.dataStorageRequirements.dataBaseType
+        $tech: Technology(
+            name == "FastAPI",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
-        System.out.println("[Rules] Database type match: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.92);
+        rec.setReason("FastAPI обеспечивает высокую производительность для AI/ML API");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("FastAPI for AI/ML", "AI/ML project, Python team");
 end
 
-rule "Full Stack Web Development"
-    @Description("Полный стек веб-разработки: язык + фреймворк + хранилище")
+// Правило 12: NestJS для TypeScript enterprise проектов
+rule "Recommend NestJS for TypeScript Enterprise"
     when
-        $request: ProjectRequirementsRequest(appType == AppType.WEB)
-        $languageResult: LanguageRecommended(language.purpose == Purpose.WEB_BACKEND)
-        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.BACKEND)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == StorageType.DOCUMENT ||
-            dataStorage.dataBaseType == DataBaseType.SQL
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.JAVASCRIPT,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            needHighSecurity == true
+        )
+        $tech: Technology(
+            name == "NestJS",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 3.0);
-        $frameworkResult.setScore($frameworkResult.getScore() + 3.0);
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 3.0);
-        System.out.println("[Rules] Full stack web development combination");
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.87);
+        rec.setReason("NestJS предоставляет архитектуру, похожую на Angular, для enterprise Node.js проектов");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("NestJS for TypeScript enterprise", "JS team, enterprise, high security");
 end
 
-rule "Modern Mobile Stack"
-    @Description("Современный мобильный стек: язык + фреймворк")
+// Правило 13: Elixir Phoenix для real-time систем
+rule "Recommend Elixir for Scalable Real-time"
     when
-        $request: ProjectRequirementsRequest(appType == AppType.ANDROID || appType == AppType.IOS)
-        $languageResult: LanguageRecommended(language.purpose == Purpose.MOBILE)
-        $frameworkResult: FrameworkRecommended(framework.tasksType == TasksType.MOBILE)
+        $req: ProjectRequirements(
+            needRealTime == true,
+            needHighLoad == true,
+            teamSize == ProjectRequirements.TeamSize.SMALL
+        )
     then
-        $languageResult.setScore($languageResult.getScore() + 4.0);
-        $frameworkResult.setScore($frameworkResult.getScore() + 4.0);
-        System.out.println("[Rules] Modern mobile stack combination");
+        auditLogService.logInfo("Consider Elixir Phoenix for highly scalable real-time systems");
 end
 
-rule "Data Science Pipeline"
-    @Description("Конвейер data science: язык + хранилище")
+// Правило 14: Quarkus для cloud-native Java
+rule "Recommend Quarkus for Cloud Native Java"
     when
-        $languageResult: LanguageRecommended(language.purpose == Purpose.DATA_SCIENCE)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == DataBaseType.NO_SQL ||
-            dataStorage.storageType == StorageType.DOCUMENT
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.JAVA,
+            budget == ProjectRequirements.BudgetLevel.HIGH,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Quarkus",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 3.0);
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 3.0);
-        System.out.println("[Rules] Data science pipeline combination");
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.85);
+        rec.setReason("Quarkus оптимизирован для cloud-native приложений и Kubernetes");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Quarkus for cloud-native", "Java team, high budget, high load");
 end
 
-rule "Startup Tech Stack"
-    @Description("Технологический стек для стартапа: быстрый запуск")
+// Правило 15: Micronaut для serverless Java
+rule "Recommend Micronaut for Serverless"
     when
-        $request: ProjectRequirementsRequest(
-            timeToShow == TimeToShow.FAST &&
-            projectType == ProjectType.COMMERCIAL &&
-            teamSize == TeamSize.SMALL
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.JAVA,
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST
         )
-        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.LOW)
-        $frameworkResult: FrameworkRecommended(framework.isReactive == true)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation == StorageLocation.REMOTE &&
-            dataStorage.dataBaseType == DataBaseType.NO_SQL
+        $tech: Technology(
+            name == "Micronaut",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        $frameworkResult.setScore($frameworkResult.getScore() + 5.0);
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
-        System.out.println("[Rules] Startup tech stack combination");
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.78);
+        rec.setReason("Micronaut имеет быстрый старт и идеален для serverless архитектуры");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Micronaut for serverless", "Java team, fast development");
 end
 
-rule "Enterprise Tech Stack"
-    @Description("Корпоративный технологический стек")
+// Правило 16: Flask для легких Python API
+rule "Recommend Flask for Lightweight Python API"
     when
-        $request: ProjectRequirementsRequest(
-            projectType == ProjectType.COMMERCIAL &&
-            teamSize == TeamSize.BIG &&
-            scale == Scale.COMPLEX
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.PYTHON,
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            projectType == ProjectRequirements.ProjectType.WEB
         )
-        $languageResult: LanguageRecommended(
-            language.popularity == Popularity.POPULAR &&
-            language.entryThreshold == EntryThreshold.MEDIUM
-        )
-        $frameworkResult: FrameworkRecommended(framework.isActual == true)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.dataBaseType == DataBaseType.SQL &&
-            dataStorage.storageType == StorageType.RELATIONAL
+        $tech: Technology(
+            name == "Flask",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 6.0);
-        $frameworkResult.setScore($frameworkResult.getScore() + 6.0);
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
-        System.out.println("[Rules] Enterprise tech stack combination");
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.82);
+        rec.setReason("Flask - минималистичный фреймворк для быстрого создания Python API");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Flask for lightweight API", "Python team, fast development, web project");
 end
 
-rule "Penalty - Outdated Framework"
-    @Description("Штраф за устаревшие фреймворки")
+// Правило 17: Express.js для простых Node.js проектов
+rule "Recommend Express.js for Simple Node.js"
     when
-        $frameworkResult: FrameworkRecommended(framework.isActual == false)
-    then
-        $frameworkResult.setScore($frameworkResult.getScore() - 4.0);
-        System.out.println("[Rules] Penalty for outdated framework: " +
-            $frameworkResult.getFramework().getName());
-end
-
-rule "Penalty - Mismatched Purpose"
-    @Description("Штраф за несоответствие цели проекта")
-    when
-        $request: ProjectRequirementsRequest(appType == AppType.WEB)
-        $languageResult: LanguageRecommended(language.purpose == Purpose.MOBILE)
-    then
-        $languageResult.setScore($languageResult.getScore() - 3.0);
-        System.out.println("[Rules] Penalty for mismatched purpose: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Penalty - High Entry for Small Team"
-    @Description("Штраф за сложный язык для маленькой команды")
-    when
-        $request: ProjectRequirementsRequest(teamSize == TeamSize.MICRO || teamSize == TeamSize.SMALL)
-        $languageResult: LanguageRecommended(language.entryThreshold == EntryThreshold.HIGH)
-    then
-        $languageResult.setScore($languageResult.getScore() - 5.0);
-        System.out.println("[Rules] Penalty for complex language in small team: " +
-            $languageResult.getLanguage().getName());
-end
-
-rule "Penalty - Slow Storage for Fast Project"
-    @Description("Штраф за медленное хранилище для быстрого проекта")
-    when
-        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageLocation == StorageLocation.REMOTE &&
-            dataStorage.storageType == StorageType.RELATIONAL
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.JAVASCRIPT,
+            budget == ProjectRequirements.BudgetLevel.LOW,
+            projectType == ProjectRequirements.ProjectType.WEB
+        )
+        $tech: Technology(
+            name == "Express.js",
+            category == Technology.TechnologyCategory.BACKEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() - 4.0);
-        System.out.println("[Rules] Penalty for slow storage in fast project: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.80);
+        rec.setReason("Express.js - минималистичный фреймворк для простых Node.js приложений");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Express.js for simple projects", "JS team, low budget, web project");
 end
 
-rule "Interpretable Languages for Rapid Prototyping"
-    @Description("Интерпретируемые языки для быстрого прототипирования")
+// Правило 18: Spring Cloud для микросервисов на Java
+rule "Recommend Spring Cloud for Java Microservices"
     when
-        $request: ProjectRequirementsRequest(
-            projectType == ProjectType.RESEARCH ||
-            projectType == ProjectType.PET
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.JAVA,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            needHighLoad == true
         )
-        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.INTERPRETABLE)
+        $tech: Technology(
+            name == "Spring Cloud",
+            category == Technology.TechnologyCategory.BACKEND
+        )
     then
-        $languageResult.setScore($languageResult.getScore() + 7.0);
-        System.out.println("[Rules] Prototyping -> Interpretable language: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.93);
+        rec.setReason("Spring Cloud предоставляет полный стек для enterprise микросервисов на Java");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Spring Cloud for microservices", "Java team, enterprise, high load");
 end
 
-rule "Compiled Languages for Performance"
-    @Description("Компилируемые языки для высокопроизводительных систем")
+// Правило 19: GraphQL для гибких API
+rule "Recommend GraphQL for Flexible APIs"
     when
-        $request: ProjectRequirementsRequest(
-            timeToShow == TimeToShow.FAST ||
-            scale == Scale.COMPLEX
+        $req: ProjectRequirements(
+            needRealTime == true,
+            teamSize == ProjectRequirements.TeamSize.MEDIUM,
+            budget == ProjectRequirements.BudgetLevel.HIGH
         )
-        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.COMPILED)
+        $tech: Technology(
+            name == "GraphQL",
+            category == Technology.TechnologyCategory.BACKEND
+        )
     then
-        $languageResult.setScore($languageResult.getScore() + 6.0);
-        System.out.println("[Rules] Performance -> Compiled language: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.79);
+        rec.setReason("GraphQL обеспечивает гибкость в работе с данными для сложных API");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("GraphQL for flexible APIs", "Real-time, medium team, high budget");
 end
 
-rule "Hybrid Languages for Flexibility"
-    @Description("Гибридные языки для баланса производительности и гибкости")
+// Правило 20: gRPC для высокопроизводительных сервисов
+rule "Recommend gRPC for High Performance Services"
     when
-        $request: ProjectRequirementsRequest(scale == Scale.HARD)
-        $languageResult: LanguageRecommended(language.executionModel == ExecutionModel.HYBRID)
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            teamSize == ProjectRequirements.TeamSize.LARGE,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE
+        )
+        $tech: Technology(
+            name == "gRPC",
+            category == Technology.TechnologyCategory.BACKEND
+        )
     then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        System.out.println("[Rules] Complex scale -> Hybrid language: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.88);
+        rec.setReason("gRPC обеспечивает высокую производительность для межсервисного взаимодействия");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("gRPC for high performance", "High load, large team, enterprise");
 end
 
-rule "Actual Popularity for Modern Projects"
-    @Description("Актуальные языки для современных проектов")
+// Правило 21: React для сложных SPA приложений
+rule "Recommend React for Complex SPA Applications"
     when
-        $request: ProjectRequirementsRequest(
-            projectType == ProjectType.COMMERCIAL ||
-            timeToShow == TimeToShow.FAST
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.WEB,
+            teamExperience in (ProjectRequirements.TeamExperience.JAVASCRIPT, ProjectRequirements.TeamExperience.MIXED),
+            budget != ProjectRequirements.BudgetLevel.LOW
         )
-        $languageResult: LanguageRecommended(language.popularity == Popularity.ACTUAL)
+        $tech: Technology(
+            name == "React",
+            category == Technology.TechnologyCategory.FRONTEND
+        )
     then
-        $languageResult.setScore($languageResult.getScore() + 4.0);
-        System.out.println("[Rules] Modern project -> Actual language: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.92);
+        rec.setReason("React с большой экосистемой и сообществом идеален для сложных SPA");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("React for complex SPA", "Web project, JS/Mixed team, not low budget");
 end
 
-rule "Document Storage for Unstructured Data"
-    @Description("Документные хранилища для неструктурированных данных")
+// Правило 22: Vue.js для быстрой разработки и обучения
+rule "Recommend Vue.js for Rapid Development"
     when
-        $request: ProjectRequirementsRequest(scale == Scale.HARD)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == StorageType.DOCUMENT
+        $req: ProjectRequirements(
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            teamSize == ProjectRequirements.TeamSize.SMALL,
+            teamExperience == ProjectRequirements.TeamExperience.NONE
+        )
+        $tech: Technology(
+            name == "Vue.js",
+            category == Technology.TechnologyCategory.FRONTEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 6.0);
-        System.out.println("[Rules] Hard scale -> Document storage: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.85);
+        rec.setReason("Vue.js легко изучать и он позволяет быстро разрабатывать интерфейсы");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Vue.js for rapid development", "Fast time-to-market, small team, no experience");
 end
 
-rule "Relational Storage for Structured Data"
-    @Description("Реляционные хранилища для структурированных данных")
+// Правило 23: Angular для enterprise приложений
+rule "Recommend Angular for Enterprise Applications"
     when
-        $request: ProjectRequirementsRequest(scale == Scale.EASY)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == StorageType.RELATIONAL
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            teamSize == ProjectRequirements.TeamSize.LARGE,
+            needHighSecurity == true
+        )
+        $tech: Technology(
+            name == "Angular",
+            category == Technology.TechnologyCategory.FRONTEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 5.0);
-        System.out.println("[Rules] Easy scale -> Relational storage: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.90);
+        rec.setReason("Angular предоставляет полный фреймворк с TypeScript для больших enterprise приложений");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Angular for enterprise", "Enterprise budget, large team, high security");
 end
 
-rule "Key-Value for Caching"
-    @Description("Ключ-значение хранилища для кэширования")
+// Правило 24: React Native для кросс-платформенной мобильной разработки
+rule "Recommend React Native for Cross-platform Mobile"
     when
-        $request: ProjectRequirementsRequest(timeToShow == TimeToShow.FAST)
-        $dataStorageResult: DataStorageRecommended(
-            dataStorage.storageType == StorageType.KEY_VALUE
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.MOBILE,
+            teamExperience == ProjectRequirements.TeamExperience.JAVASCRIPT,
+            budget == ProjectRequirements.BudgetLevel.MEDIUM
+        )
+        $tech: Technology(
+            name == "React Native",
+            category == Technology.TechnologyCategory.FRONTEND
         )
     then
-        $dataStorageResult.setScore($dataStorageResult.getScore() + 7.0);
-        System.out.println("[Rules] Fast project -> Key-value for caching: " +
-            $dataStorageResult.getDataStorage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.87);
+        rec.setReason("React Native позволяет разрабатывать для iOS и Android с одним кодом на JavaScript");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("React Native for cross-platform", "Mobile project, JS team, medium budget");
 end
 
-rule "Framework with Multiple Language Support"
-    @Description("Фреймворки с поддержкой нескольких языков")
+// Правило 25: Flutter для производительных мобильных приложений
+rule "Recommend Flutter for High Performance Mobile"
     when
-        $frameworkResult: FrameworkRecommended($framework: framework)
-        $languageCount: Number() from accumulate(
-            $lang: Language() from $framework.languages,
-            count($lang)
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.MOBILE,
+            needHighLoad == true,
+            budget == ProjectRequirements.BudgetLevel.HIGH
         )
-        eval($languageCount.intValue() > 1)
+        $tech: Technology(
+            name == "Flutter",
+            category == Technology.TechnologyCategory.FRONTEND
+        )
     then
-        $frameworkResult.setScore($frameworkResult.getScore() + 2.0);
-        System.out.println("[Rules] Multi-language framework: " +
-            $framework.getName() + " (" + $languageCount + " languages)");
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.89);
+        rec.setReason("Flutter обеспечивает нативную производительность с кроссплатформенной разработкой");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Flutter for performance", "Mobile project, high load, high budget");
 end
 
-rule "Language Entry Threshold Match"
-    @Description("Совпадение требуемого порога входа языка")
+// Правило 26: Svelte для небольших быстрых приложений
+rule "Recommend Svelte for Small Fast Applications"
     when
-        $request: ProjectRequirementsRequest(
-            languageRequirements != null &&
-            languageRequirements.entryThreshold != null
+        $req: ProjectRequirements(
+            teamSize == ProjectRequirements.TeamSize.SMALL,
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            budget == ProjectRequirements.BudgetLevel.LOW
         )
-        $languageResult: LanguageRecommended(
-            language.entryThreshold == $request.languageRequirements.entryThreshold
+        $tech: Technology(
+            name == "Svelte",
+            category == Technology.TechnologyCategory.FRONTEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 5.0);
-        System.out.println("[Rules] Language entry threshold match: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.83);
+        rec.setReason("Svelte компилируется в эффективный vanilla JavaScript, идеален для небольших проектов");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Svelte for small projects", "Small team, fast development, low budget");
 end
 
-rule "Execution Model Match"
-    @Description("Совпадение требуемой модели исполнения")
+// Правило 27: Next.js для SEO-оптимизированных приложений
+rule "Recommend Next.js for SEO Optimized Apps"
     when
-        $request: ProjectRequirementsRequest(
-            languageRequirements != null &&
-            languageRequirements.executionModel != null
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.WEB,
+            needHighLoad == true,
+            teamExperience == ProjectRequirements.TeamExperience.JAVASCRIPT
         )
-        $languageResult: LanguageRecommended(
-            language.executionModel == $request.languageRequirements.executionModel
+        $tech: Technology(
+            name == "Next.js",
+            category == Technology.TechnologyCategory.FRONTEND
         )
     then
-        $languageResult.setScore($languageResult.getScore() + 4.0);
-        System.out.println("[Rules] Execution model match: " +
-            $languageResult.getLanguage().getName());
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.86);
+        rec.setReason("Next.js обеспечивает server-side rendering для лучшей SEO оптимизации");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Next.js for SEO", "Web project, high load, JS team");
+end
+
+// Правило 28: Nuxt.js для Vue.js с SSR
+rule "Recommend Nuxt.js for Vue SSR"
+    when
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.WEB,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Nuxt.js",
+            category == Technology.TechnologyCategory.FRONTEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.82);
+        rec.setReason("Nuxt.js добавляет server-side rendering к Vue.js для лучшей производительности");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Nuxt.js for Vue SSR", "Web project, high load");
+end
+
+// Правило 29: TypeScript для enterprise JavaScript проектов
+rule "Recommend TypeScript for Enterprise JavaScript"
+    when
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            teamSize == ProjectRequirements.TeamSize.LARGE,
+            needHighSecurity == true
+        )
+        $tech: Technology(
+            name == "TypeScript",
+            category == Technology.TechnologyCategory.FRONTEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.94);
+        rec.setReason("TypeScript добавляет статическую типизацию для повышения надежности enterprise приложений");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("TypeScript for enterprise JS", "Enterprise, large team, high security");
+end
+
+// Правило 30: Redux для управления состоянием в больших приложениях
+rule "Recommend Redux for Large Application State"
+    when
+        $req: ProjectRequirements(
+            teamSize == ProjectRequirements.TeamSize.LARGE,
+            budget == ProjectRequirements.BudgetLevel.HIGH,
+            projectType == ProjectRequirements.ProjectType.WEB
+        )
+        $tech: Technology(
+            name == "Redux",
+            category == Technology.TechnologyCategory.FRONTEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.80);
+        rec.setReason("Redux обеспечивает предсказуемое управление состоянием в больших приложениях");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Redux for state management", "Large team, high budget, web project");
+end
+
+// Правило 31: PostgreSQL для сложных транзакций и ACID
+rule "Recommend PostgreSQL for Complex Transactions"
+    when
+        $req: ProjectRequirements(
+            needHighSecurity == true,
+            budget != ProjectRequirements.BudgetLevel.LOW
+        )
+        $tech: Technology(
+            name == "PostgreSQL",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.95);
+        rec.setReason("PostgreSQL обеспечивает полную ACID compliance и расширенные возможности SQL");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("PostgreSQL for transactions", "High security, not low budget");
+end
+
+// Правило 32: MongoDB для гибкой схемы и быстрого старта
+rule "Recommend MongoDB for Flexible Schema"
+    when
+        $req: ProjectRequirements(
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            teamSize == ProjectRequirements.TeamSize.SMALL
+        )
+        $tech: Technology(
+            name == "MongoDB",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.88);
+        rec.setReason("MongoDB позволяет быстро итерировать схему данных на ранних стадиях проекта");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("MongoDB for flexible schema", "Fast development, small team");
+end
+
+// Правило 33: Redis для кэширования и real-time данных
+rule "Recommend Redis for Caching and Real-time"
+    when
+        $req: ProjectRequirements(
+            needRealTime == true,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Redis",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.90);
+        rec.setReason("Redis как in-memory data store идеален для кэширования и real-time приложений");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Redis for caching", "Real-time, high load");
+end
+
+// Правило 34: MySQL для веб-приложений с ограниченным бюджетом
+rule "Recommend MySQL for Budget Web Applications"
+    when
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.LOW,
+            projectType == ProjectRequirements.ProjectType.WEB
+        )
+        $tech: Technology(
+            name == "MySQL",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.82);
+        rec.setReason("MySQL - надежная и проверенная СУБД для веб-приложений с ограниченным бюджетом");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("MySQL for budget web", "Low budget, web project");
+end
+
+// Правило 35: Cassandra для больших данных и горизонтального масштабирования
+rule "Recommend Cassandra for Big Data Scaling"
+    when
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE
+        )
+        $tech: Technology(
+            name == "Apache Cassandra",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.87);
+        rec.setReason("Cassandra обеспечивает линейное горизонтальное масштабирование для больших данных");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Cassandra for big data", "High load, enterprise budget");
+end
+
+// Правило 36: Elasticsearch для поиска и аналитики
+rule "Recommend Elasticsearch for Search and Analytics"
+    when
+        $req: ProjectRequirements(
+            needRealTime == true,
+            teamSize == ProjectRequirements.TeamSize.MEDIUM,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "Elasticsearch",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.85);
+        rec.setReason("Elasticsearch обеспечивает мощный полнотекстовый поиск и аналитику в реальном времени");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Elasticsearch for search", "Real-time, medium team, high budget");
+end
+
+// Правило 37: SQLite для встроенных и мобильных приложений
+rule "Recommend SQLite for Embedded and Mobile"
+    when
+        $req: ProjectRequirements(
+            projectType in (ProjectRequirements.ProjectType.MOBILE, ProjectRequirements.ProjectType.DESKTOP),
+            teamSize == ProjectRequirements.TeamSize.SMALL
+        )
+        $tech: Technology(
+            name == "SQLite",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.89);
+        rec.setReason("SQLite - встроенная СУБД, идеальная для мобильных и десктоп приложений");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("SQLite for embedded", "Mobile/Desktop project, small team");
+end
+
+// Правило 38: DynamoDB для serverless архитектуры на AWS
+rule "Recommend DynamoDB for AWS Serverless"
+    when
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.HIGH,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Amazon DynamoDB",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.83);
+        rec.setReason("DynamoDB обеспечивает автоматическое масштабирование для serverless приложений на AWS");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("DynamoDB for serverless", "High budget, high load");
+end
+
+// Правило 39: Neo4j для графовых данных
+rule "Recommend Neo4j for Graph Data"
+    when
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.AI_ML,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "Neo4j",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.86);
+        rec.setReason("Neo4j - ведущая графовая СУБД для работы со сложными связанными данными");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Neo4j for graph data", "AI/ML project, high budget");
+end
+
+// Правило 40: TimescaleDB для временных рядов
+rule "Recommend TimescaleDB for Time Series"
+    when
+        $req: ProjectRequirements(
+            needRealTime == true,
+            teamSize == ProjectRequirements.TeamSize.MEDIUM
+        )
+        $tech: Technology(
+            name == "TimescaleDB",
+            category == Technology.TechnologyCategory.DATABASE
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.84);
+        rec.setReason("TimescaleDB оптимизирован для хранения и обработки данных временных рядов");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("TimescaleDB for time series", "Real-time, medium team");
+end
+
+// Правило 41: Docker для контейнеризации приложений
+rule "Recommend Docker for Containerization"
+    when
+        $req: ProjectRequirements(
+            budget != ProjectRequirements.BudgetLevel.LOW,
+            teamSize != ProjectRequirements.TeamSize.SMALL
+        )
+        $tech: Technology(
+            name == "Docker",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.92);
+        rec.setReason("Docker стандартизирует развертывание приложений через контейнеризацию");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Docker for containerization", "Not low budget, not small team");
+end
+
+// Правило 42: Kubernetes для оркестрации контейнеров
+rule "Recommend Kubernetes for Container Orchestration"
+    when
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            teamSize == ProjectRequirements.TeamSize.LARGE,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE
+        )
+        $tech: Technology(
+            name == "Kubernetes",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.94);
+        rec.setReason("Kubernetes обеспечивает автоматическое масштабирование и управление контейнерами");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Kubernetes for orchestration", "High load, large team, enterprise");
+end
+
+// Правило 43: Jenkins для CI/CD в enterprise проектах
+rule "Recommend Jenkins for Enterprise CI/CD"
+    when
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            teamSize == ProjectRequirements.TeamSize.LARGE
+        )
+        $tech: Technology(
+            name == "Jenkins",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.88);
+        rec.setReason("Jenkins - проверенное решение для CI/CD в enterprise среде");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Jenkins for CI/CD", "Enterprise budget, large team");
+end
+
+// Правило 44: GitHub Actions для современных проектов
+rule "Recommend GitHub Actions for Modern Projects"
+    when
+        $req: ProjectRequirements(
+            timeToMarket == ProjectRequirements.TimeToMarket.FAST,
+            teamSize == ProjectRequirements.TeamSize.SMALL
+        )
+        $tech: Technology(
+            name == "GitHub Actions",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.86);
+        rec.setReason("GitHub Actions предоставляет интегрированный CI/CD для быстрого развертывания");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("GitHub Actions for CI/CD", "Fast development, small team");
+end
+
+// Правило 45: Terraform для Infrastructure as Code
+rule "Recommend Terraform for Infrastructure as Code"
+    when
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Terraform",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.90);
+        rec.setReason("Terraform позволяет управлять инфраструктурой как кодом для consistency и повторяемости");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Terraform for IaC", "Enterprise budget, high load");
+end
+
+// Правило 46: Ansible для configuration management
+rule "Recommend Ansible for Configuration Management"
+    when
+        $req: ProjectRequirements(
+            teamSize == ProjectRequirements.TeamSize.MEDIUM,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "Ansible",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.85);
+        rec.setReason("Ansible упрощает управление конфигурациями через YAML и agentless архитектуру");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Ansible for configuration", "Medium team, high budget");
+end
+
+// Правило 47: Prometheus для мониторинга
+rule "Recommend Prometheus for Monitoring"
+    when
+        $req: ProjectRequirements(
+            needHighLoad == true,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "Prometheus",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.87);
+        rec.setReason("Prometheus - стандарт для мониторинга контейнеризированных приложений");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Prometheus for monitoring", "High load, high budget");
+end
+
+// Правило 48: Grafana для визуализации метрик
+rule "Recommend Grafana for Metrics Visualization"
+    when
+        $req: ProjectRequirements(
+            teamSize == ProjectRequirements.TeamSize.MEDIUM,
+            budget != ProjectRequirements.BudgetLevel.LOW
+        )
+        $tech: Technology(
+            name == "Grafana",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.83);
+        rec.setReason("Grafana предоставляет мощные дашборды для визуализации метрик из различных источников");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Grafana for visualization", "Medium team, not low budget");
+end
+
+// Правило 49: AWS для enterprise cloud
+rule "Recommend AWS for Enterprise Cloud"
+    when
+        $req: ProjectRequirements(
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE,
+            needHighLoad == true
+        )
+        $tech: Technology(
+            name == "Amazon Web Services",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.95);
+        rec.setReason("AWS предоставляет наиболее полный набор сервисов для enterprise cloud решений");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("AWS for enterprise cloud", "Enterprise budget, high load");
+end
+
+// Правило 50: Azure для .NET и Microsoft экосистемы
+rule "Recommend Azure for Microsoft Ecosystem"
+    when
+        $req: ProjectRequirements(
+            teamExperience == ProjectRequirements.TeamExperience.DOTNET,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE
+        )
+        $tech: Technology(
+            name == "Microsoft Azure",
+            category == Technology.TechnologyCategory.DEVOPS
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.92);
+        rec.setReason("Azure обеспечивает лучшую интеграцию с .NET и Microsoft экосистемой");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Azure for Microsoft ecosystem", ".NET team, enterprise budget");
+end
+
+// Правило 51: JWT для аутентификации в распределенных системах
+rule "Recommend JWT for Distributed Authentication"
+    when
+        $req: ProjectRequirements(
+            needHighSecurity == true,
+            teamSize == ProjectRequirements.TeamSize.MEDIUM
+        )
+        $tech: Technology(
+            name == "JSON Web Tokens",
+            category == Technology.TechnologyCategory.BACKEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.88);
+        rec.setReason("JWT обеспечивает stateless аутентификацию для распределенных систем");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("JWT for authentication", "High security, medium team");
+end
+
+// Правило 52: OAuth 2.0 для социальной аутентификации
+rule "Recommend OAuth 2.0 for Social Authentication"
+    when
+        $req: ProjectRequirements(
+            projectType == ProjectRequirements.ProjectType.WEB,
+            budget == ProjectRequirements.BudgetLevel.MEDIUM
+        )
+        $tech: Technology(
+            name == "OAuth 2.0",
+            category == Technology.TechnologyCategory.BACKEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.85);
+        rec.setReason("OAuth 2.0 - стандарт для социальной аутентификации и авторизации");
+        rec.setPriority(3);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("OAuth 2.0 for social auth", "Web project, medium budget");
+end
+
+// Правило 53: Kafka для обработки потоков данных
+rule "Recommend Kafka for Stream Processing"
+    when
+        $req: ProjectRequirements(
+            needRealTime == true,
+            needHighLoad == true,
+            budget == ProjectRequirements.BudgetLevel.ENTERPRISE
+        )
+        $tech: Technology(
+            name == "Apache Kafka",
+            category == Technology.TechnologyCategory.BACKEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.91);
+        rec.setReason("Kafka - лидер в обработке потоков данных в реальном времени");
+        rec.setPriority(1);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("Kafka for stream processing", "Real-time, high load, enterprise");
+end
+
+// Правило 54: RabbitMQ для message queue
+rule "Recommend RabbitMQ for Message Queue"
+    when
+        $req: ProjectRequirements(
+            needRealTime == true,
+            teamSize == ProjectRequirements.TeamSize.MEDIUM
+        )
+        $tech: Technology(
+            name == "RabbitMQ",
+            category == Technology.TechnologyCategory.BACKEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.84);
+        rec.setReason("RabbitMQ предоставляет надежную систему очередей сообщений");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.ALTERNATIVE);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("RabbitMQ for message queue", "Real-time, medium team");
+end
+
+// Правило 55: Swagger/OpenAPI для документирования API
+rule "Recommend OpenAPI for API Documentation"
+    when
+        $req: ProjectRequirements(
+            teamSize == ProjectRequirements.TeamSize.MEDIUM,
+            budget == ProjectRequirements.BudgetLevel.HIGH
+        )
+        $tech: Technology(
+            name == "OpenAPI (Swagger)",
+            category == Technology.TechnologyCategory.BACKEND
+        )
+    then
+        TechnologyRecommendation rec = new TechnologyRecommendation();
+        rec.setTechnology($tech);
+        rec.setConfidence(0.89);
+        rec.setReason("OpenAPI стандартизирует документацию и тестирование REST API");
+        rec.setPriority(2);
+        rec.setStatus(TechnologyRecommendation.RecommendationStatus.PRIMARY);
+        recommendations.add(rec);
+        auditLogService.logRuleActivation("OpenAPI for API docs", "Medium team, high budget");
 end
